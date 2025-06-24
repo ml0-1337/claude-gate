@@ -11,7 +11,7 @@
     "url": "git+https://github.com/ml0-1337/claude-gate.git"
   },
   "license": "MIT",
-  "author": "Your Name <your.email@example.com>",
+  "author": "ml0-1337",
   "main": "bin.exe",
   "files": [
     "bin.exe"

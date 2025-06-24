@@ -138,7 +138,7 @@ Claude Gate uses OAuth 2.0 with Proof Key for Code Exchange (PKCE) for authentic
 ### Reporting Process
 
 1. **Do NOT** create public GitHub issues for security vulnerabilities
-2. Email security concerns to: [maintainer email]
+2. Email security concerns to: security@claude-gate.dev
 3. Include:
    - Description of vulnerability
    - Steps to reproduce
