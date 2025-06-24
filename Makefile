@@ -1,27 +1,42 @@
-.PHONY: build test clean install release snapshot npm-test test-all test-docker test-edge help
+.PHONY: build test test-unit test-integration test-e2e clean install release snapshot npm-test test-all test-docker test-edge help
 
 # Default target
 help:
 	@echo "Claude Gate - Available targets:"
-	@echo "  make build      - Build for current platform"
-	@echo "  make test       - Run tests"
-	@echo "  make snapshot   - Build snapshot release (all platforms)"
-	@echo "  make npm-test   - Test NPM package locally"
-	@echo "  make test-all   - Run comprehensive test suite"
-	@echo "  make test-docker - Test in Docker containers"
-	@echo "  make test-edge  - Test edge cases"
-	@echo "  make install    - Install locally"
-	@echo "  make clean      - Clean build artifacts"
-	@echo "  make release    - Create a new release (requires version)"
+	@echo "  make build         - Build for current platform"
+	@echo "  make test          - Run unit tests with coverage"
+	@echo "  make test-unit     - Run unit tests only (short mode)"
+	@echo "  make test-integration - Run integration tests"
+	@echo "  make test-e2e      - Run end-to-end tests"
+	@echo "  make test-all      - Run comprehensive test suite"
+	@echo "  make snapshot      - Build snapshot release (all platforms)"
+	@echo "  make npm-test      - Test NPM package locally"
+	@echo "  make test-docker   - Test in Docker containers"
+	@echo "  make test-edge     - Test edge cases"
+	@echo "  make install       - Install locally"
+	@echo "  make clean         - Clean build artifacts"
+	@echo "  make release       - Create a new release (requires version)"
 
 # Build for current platform
 build:
 	go build -ldflags="-s -w" -o claude-gate ./cmd/claude-gate
 
-# Run tests
+# Run unit tests with coverage
 test:
 	go test -v -race -coverprofile=coverage.out ./...
 	go tool cover -func=coverage.out
+
+# Run unit tests only (short mode)
+test-unit:
+	go test -short -v ./...
+
+# Run integration tests
+test-integration:
+	go test -tags=integration -v ./internal/test/integration/...
+
+# Run end-to-end tests
+test-e2e: build
+	go test -tags=e2e -v ./internal/test/e2e/...
 
 # Build snapshot release with GoReleaser
 snapshot:
@@ -38,7 +53,7 @@ npm-test: snapshot
 	./scripts/test-npm-local.sh
 
 # Run comprehensive test suite
-test-all:
+test-all: test-unit test-integration test-e2e
 	./scripts/test-all.sh
 
 # Test in Docker containers
