@@ -161,3 +161,9 @@ See CONTRIBUTING.md for detailed guidelines. Key points:
 - Document public APIs
 - Sign commits with GPG key
 - Squash commits before merging
+
+## Utility Scripts
+
+- `.claude/scripts/add-claude-coauthor.sh [num_commits]` - Add Claude as co-author to recent commits (default: 10)
+  - Creates backup branch before making changes
+  - Use when commits are missing Claude co-author attribution
