@@ -13,117 +13,68 @@ Claude Gate is a Go rewrite of claude-auth-bridge that maintains the critical OA
 - ✅ **Model Alias Mapping** - Seamless handling of `latest` model aliases
 - ✅ **SSE Streaming Support** - Full support for streaming responses
 - ✅ **Cross-Platform** - Works on macOS, Linux, and Windows
-- ✅ **Secure Token Storage** - OS keychain integration (coming soon)
+- ✅ **Interactive Dashboard** - Real-time monitoring of requests and usage
 - ✅ **High Performance** - <50MB memory usage, <5ms request overhead
 
-## Installation
+## Quick Start
 
-### Via NPM (Recommended)
+### 1. Install
 
 ```bash
 npm install -g claude-gate
 ```
 
-This will automatically download the correct binary for your platform.
-
-### Via Homebrew (macOS/Linux)
+### 2. Authenticate
 
 ```bash
-brew tap yourusername/tap
-brew install claude-gate
+claude-gate auth login
 ```
 
-### From Source
+### 3. Start Proxy
 
 ```bash
-go install github.com/yourusername/claude-gate/cmd/claude-gate@latest
+claude-gate start
 ```
 
-### Direct Download
+### 4. Use with any SDK
 
-Download pre-built binaries from the [releases page](https://github.com/yourusername/claude-gate/releases).
+```python
+import anthropic
 
-## Quick Start
+client = anthropic.Anthropic(
+    base_url="http://localhost:8080",
+    api_key="sk-dummy"  # Can be any string
+)
 
-1. **Authenticate with your Claude Pro/Max account:**
-   ```bash
-   claude-gate auth login
-   ```
-
-2. **Start the proxy server:**
-   ```bash
-   claude-gate start
-   ```
-
-3. **Use any Anthropic SDK with the proxy:**
-   ```python
-   import anthropic
-   
-   client = anthropic.Anthropic(
-       base_url="http://localhost:8000",
-       api_key="sk-dummy"  # Can be any string
-   )
-   
-   response = client.messages.create(
-       model="claude-3-5-sonnet-latest",
-       messages=[{"role": "user", "content": "Hello!"}]
-   )
-   ```
-
-## CLI Commands
-
-- `claude-gate start` - Start the proxy server
-- `claude-gate auth login` - Authenticate with Claude Pro/Max
-- `claude-gate auth logout` - Clear stored credentials
-- `claude-gate auth status` - Check authentication status
-- `claude-gate test` - Test proxy connection
-- `claude-gate version` - Show version information
-
-## Configuration
-
-Environment variables:
-- `CLAUDE_GATE_HOST` - Host to bind (default: 127.0.0.1)
-- `CLAUDE_GATE_PORT` - Port to bind (default: 8000)
-- `CLAUDE_GATE_PROXY_AUTH_TOKEN` - Enable proxy authentication
-- `CLAUDE_GATE_LOG_LEVEL` - Logging level (DEBUG, INFO, WARNING, ERROR)
-
-## How It Works
-
-Claude Gate works by:
-1. Authenticating with Claude using OAuth (same as claude.ai)
-2. Injecting required headers and system prompts
-3. Identifying as "Claude Code" to bypass API restrictions
-4. Proxying requests with proper transformations
-
-The critical innovation is the system prompt transformation that ensures every request identifies as Claude Code, which Anthropic's systems recognize as their official CLI.
-
-## Development
-
-### Prerequisites
-- Go 1.22+
-- Claude Pro or Claude Max subscription
-
-### Building
-```bash
-go build -o claude-gate ./cmd/claude-gate
+response = client.messages.create(
+    model="claude-3-5-sonnet-20241022",
+    max_tokens=300,
+    messages=[{"role": "user", "content": "Hello, Claude!"}]
+)
 ```
 
-### Testing
-```bash
-go test ./...
-```
+## Documentation
 
-## Security
+For detailed documentation, see the [docs](./docs) directory:
 
-- OAuth tokens are stored securely (file-based currently, keychain coming soon)
-- No tokens are ever sent to third parties
-- Optional proxy authentication for shared deployments
-- All connections to Anthropic use HTTPS
+- **[Getting Started](./docs/getting-started/)** - Installation, configuration, and quick start
+- **[User Guides](./docs/guides/)** - Troubleshooting, development, and contributing
+- **[API Reference](./docs/reference/)** - CLI commands and HTTP API
+- **[Architecture](./docs/architecture/)** - System design and security model
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](./docs/guides/contributing.md) for details.
 
 ## License
 
-MIT
+MIT License - see [LICENSE](./LICENSE) for details.
 
 ## Acknowledgments
 
-Based on the original Python implementation of claude-auth-bridge.
+- Original Python implementation: [r3ggi/claude-auth-bridge](https://github.com/r3ggi/claude-auth-bridge)
+- Anthropic for Claude and the Claude Code CLI
+
+---
+
+⚠️ **Disclaimer**: This project is not affiliated with Anthropic. Use at your own risk and in accordance with Claude's Terms of Service.

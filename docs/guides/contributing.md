@@ -27,7 +27,7 @@ Thank you for your interest in contributing to Claude Gate! This guide will help
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/claude-gate.git
+git clone https://github.com/anthropics/claude-gate.git
 cd claude-gate
 
 # Install dependencies
@@ -322,10 +322,10 @@ make release VERSION=1.2.3
 
 ### Resources
 
-- [Project Documentation](./docs/)
-- [Architecture Overview](./docs/architecture/ARCHITECTURE.md)
-- [Security Policy](./docs/SECURITY.md)
-- [Issue Tracker](https://github.com/yourusername/claude-gate/issues)
+- [Project Documentation](../README.md)
+- [Architecture Overview](../architecture/overview.md)
+- [Security Policy](../architecture/security.md)
+- [Issue Tracker](https://github.com/anthropics/claude-gate/issues)
 
 ### Communication
 
@@ -343,3 +343,7 @@ Look for issues labeled:
 ## Thank You!
 
 Your contributions make Claude Gate better for everyone. We appreciate your time and effort in improving this project!
+
+---
+
+[← Guides](../README.md#guides) | [Documentation Home](../README.md) | [Development →](./development.md)

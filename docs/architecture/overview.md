@@ -67,7 +67,7 @@ Key transformations:
 ### 4. Configuration (`internal/config/`)
 
 Centralized configuration management:
-- Default port: 9988
+- Default port: 8080
 - Configurable via environment variables
 - Runtime configuration validation
 
@@ -211,3 +211,7 @@ See `/docs/decisions/` for detailed rationale on:
 3. Why system prompt injection over API translation
 4. Why Go over Python (performance, distribution)
 5. Why NPM distribution alongside binaries
+
+---
+
+[← Architecture](../README.md#architecture) | [Documentation Home](../README.md) | [Security →](./security.md)

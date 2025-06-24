@@ -215,3 +215,7 @@ Claude Gate is designed with security best practices but makes no compliance cla
 - [OAuth 2.0 Security Best Practices](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics)
 - [Go Security Guidelines](https://golang.org/doc/security)
 - [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
+
+---
+
+[← Architecture](../README.md#architecture) | [Documentation Home](../README.md) | [Overview →](./overview.md)

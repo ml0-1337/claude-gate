@@ -278,3 +278,7 @@ When reporting test failures, include:
 4. NPM version: `npm --version`
 5. Complete error output
 6. Steps to reproduce
+
+---
+
+[← Testing](../README.md#testing) | [Documentation Home](../README.md) | [Test Results →](./test-results/)
