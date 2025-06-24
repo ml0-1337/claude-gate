@@ -27,6 +27,9 @@ type AuthData struct {
 // NewOAuthClient creates a new OAuth client with Anthropic configuration
 func NewOAuthClient() *OAuthClient {
 	return &OAuthClient{
+		// OAuth client ID is public by design for CLI applications (OAuth public clients).
+		// Security is provided by PKCE flow, not by keeping the client ID secret.
+		// This follows the same pattern as GitHub CLI, Google Cloud SDK, and other major CLI tools.
 		ClientID:     "9d1c250a-e61b-44d9-88ed-5944d1962f5e",
 		AuthorizeURL: "https://claude.ai/oauth/authorize",
 		TokenURL:     "https://console.anthropic.com/v1/oauth/token",
