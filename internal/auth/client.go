@@ -6,13 +6,16 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
 // OAuthTokenProvider implements TokenProvider interface for the proxy
 type OAuthTokenProvider struct {
-	client  *OAuthClient
-	storage StorageBackend
+	client      *OAuthClient
+	storage     StorageBackend
+	cachedToken *TokenInfo
+	cacheMutex  sync.RWMutex
 }
 
 // NewOAuthTokenProvider creates a new OAuth token provider
@@ -25,6 +28,25 @@ func NewOAuthTokenProvider(storage StorageBackend) *OAuthTokenProvider {
 
 // GetAccessToken returns a valid access token, refreshing if necessary
 func (p *OAuthTokenProvider) GetAccessToken() (string, error) {
+	// First, check if we have a valid cached token
+	p.cacheMutex.RLock()
+	if p.cachedToken != nil && p.cachedToken.Type == "oauth" && !p.cachedToken.NeedsRefresh() {
+		token := p.cachedToken.AccessToken
+		p.cacheMutex.RUnlock()
+		return token, nil
+	}
+	p.cacheMutex.RUnlock()
+	
+	// Need to fetch or refresh token - use write lock
+	p.cacheMutex.Lock()
+	defer p.cacheMutex.Unlock()
+	
+	// Double-check after acquiring write lock (another goroutine might have refreshed)
+	if p.cachedToken != nil && p.cachedToken.Type == "oauth" && !p.cachedToken.NeedsRefresh() {
+		return p.cachedToken.AccessToken, nil
+	}
+	
+	// Fetch token from storage
 	token, err := p.storage.Get("anthropic")
 	if err != nil {
 		return "", fmt.Errorf("failed to get token from storage: %w", err)
@@ -47,9 +69,13 @@ func (p *OAuthTokenProvider) GetAccessToken() (string, error) {
 			return "", fmt.Errorf("failed to save refreshed token: %w", err)
 		}
 		
+		// Update cache
+		p.cachedToken = newToken
 		return newToken.AccessToken, nil
 	}
 	
+	// Update cache with the token from storage
+	p.cachedToken = token
 	return token.AccessToken, nil
 }
 
