@@ -1,4 +1,4 @@
-.PHONY: build test clean install release snapshot npm-test help
+.PHONY: build test clean install release snapshot npm-test test-all test-docker test-edge help
 
 # Default target
 help:
@@ -7,6 +7,9 @@ help:
 	@echo "  make test       - Run tests"
 	@echo "  make snapshot   - Build snapshot release (all platforms)"
 	@echo "  make npm-test   - Test NPM package locally"
+	@echo "  make test-all   - Run comprehensive test suite"
+	@echo "  make test-docker - Test in Docker containers"
+	@echo "  make test-edge  - Test edge cases"
 	@echo "  make install    - Install locally"
 	@echo "  make clean      - Clean build artifacts"
 	@echo "  make release    - Create a new release (requires version)"
@@ -33,6 +36,18 @@ snapshot:
 # Test NPM package locally
 npm-test: snapshot
 	./scripts/test-npm-local.sh
+
+# Run comprehensive test suite
+test-all:
+	./scripts/test-all.sh
+
+# Test in Docker containers
+test-docker: snapshot
+	./scripts/test-docker.sh
+
+# Test edge cases
+test-edge:
+	./scripts/test-edge-cases.sh
 
 # Install locally
 install: build

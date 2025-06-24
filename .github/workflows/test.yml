@@ -1,0 +1,171 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-go:
+    name: Test Go Code
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go: ['1.22', '1.23']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache: true
+      
+      - name: Run tests
+        run: |
+          go test -v -race -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out
+      
+      - name: Build binary
+        run: go build -v ./cmd/claude-gate
+
+  test-npm:
+    name: Test NPM Package
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: ['18', '20', '22']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      
+      - name: Test install script
+        run: |
+          cd npm
+          node scripts/install.test.js
+      
+      - name: Validate package.json files
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('npm/package.json'))"
+          for pkg in darwin-x64 darwin-arm64 linux-x64 linux-arm64 win32-x64; do
+            node -e "JSON.parse(require('fs').readFileSync('npm/platforms/$pkg/package.json'))"
+          done
+      
+      - name: Test platform detection
+        run: |
+          cd npm
+          node -e "const {getPlatform} = require('./scripts/install.js'); console.log(getPlatform())"
+
+  test-goreleaser:
+    name: Test GoReleaser Config
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+      
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          install-only: true
+          version: latest
+      
+      - name: Validate config
+        run: goreleaser check
+      
+      - name: Test snapshot build
+        run: goreleaser build --snapshot --clean
+      
+      - name: Check artifacts
+        run: |
+          ls -la dist/
+          # Verify expected artifacts exist
+          test -f dist/claude-gate_*_darwin_amd64*/claude-gate
+          test -f dist/claude-gate_*_darwin_arm64/claude-gate
+          test -f dist/claude-gate_*_linux_amd64*/claude-gate
+          test -f dist/claude-gate_*_linux_arm64/claude-gate
+          test -f dist/claude-gate_*_windows_amd64*/claude-gate.exe
+
+  test-scripts:
+    name: Test Scripts
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check script permissions
+        run: |
+          test -x scripts/build-release.sh
+          test -x scripts/test-npm-local.sh
+          test -x scripts/setup-npm-auth.sh
+          test -x scripts/update-version.sh
+          test -x scripts/test-all.sh
+      
+      - name: Test version update script
+        run: |
+          # Test with a dummy version
+          ./scripts/update-version.sh 9.9.9
+          # Verify changes
+          grep -q '"version": "9.9.9"' npm/package.json
+          grep -q 'var version = "9.9.9"' cmd/claude-gate/main.go
+          # Restore original
+          git checkout -- .
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: [test-go, test-npm, test-goreleaser]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          install-only: true
+          version: latest
+      
+      - name: Run comprehensive tests
+        run: ./scripts/test-all.sh
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            coverage.out
+            dist/
