@@ -1,8 +1,8 @@
 ---
 todo_id: fix-macos-keychain-prompts
 started: 2025-06-24 22:49:42
-completed:
-status: in_progress
+completed: 2025-06-24 23:10:29
+status: completed
 priority: high
 ---
 
@@ -86,9 +86,9 @@ priority: high
 - [✓] Write unit tests for configuration
 - [✓] Write integration tests for keyring behavior
 - [✓] Run tests and verify they pass
-- [ ] Test manually on macOS
+- [ ] Test manually on macOS (pending user verification)
 - [✓] Update troubleshooting documentation
-- [ ] Commit with tests and implementation
+- [✓] Commit with tests and implementation
 
 ## Working Scratchpad
 
