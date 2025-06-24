@@ -211,6 +211,45 @@ This will show detailed information about:
    security unlock-keychain ~/Library/Keychains/login.keychain
    ```
 
+### macOS Repeated Password Prompts (Fixed)
+
+**Problem:** macOS shows password prompts every time Claude Gate accesses the keychain.
+
+**Solution:**
+As of version 0.2.0+, Claude Gate automatically configures the `KeychainTrustApplication` setting to prevent repeated password prompts. You should only see one prompt on first use where you can click "Always Allow".
+
+If you still experience repeated prompts:
+
+1. **Update to the latest version:**
+   ```bash
+   npm update -g claude-gate
+   ```
+
+2. **Clear existing keychain entries and re-authenticate:**
+   ```bash
+   claude-gate auth logout
+   claude-gate auth login
+   ```
+
+3. **Override default settings (if needed):**
+   ```bash
+   # Disable application trust (not recommended)
+   export CLAUDE_GATE_KEYCHAIN_TRUST_APP=false
+   
+   # Change accessibility settings
+   export CLAUDE_GATE_KEYCHAIN_ACCESSIBLE_WHEN_UNLOCKED=false
+   
+   # Enable iCloud sync (security risk - not recommended)
+   export CLAUDE_GATE_KEYCHAIN_SYNCHRONIZABLE=true
+   ```
+
+4. **Check keychain permissions in Keychain Access app:**
+   - Open Keychain Access (Applications > Utilities)
+   - Search for "claude-gate"
+   - Double-click the entry
+   - Go to Access Control tab
+   - Ensure claude-gate is in the allowed applications list
+
 ### Linux Keyring Not Available
 
 **Problem:** "keyring backend not available" on Linux.

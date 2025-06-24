@@ -25,11 +25,7 @@ func (cmd *AuthStorageStatusCmd) Run(ctx *kong.Context) error {
 	cfg.LoadFromEnv()
 	
 	// Create storage factory
-	factory := auth.NewStorageFactory(auth.StorageFactoryConfig{
-		Type:        auth.StorageType(cfg.AuthStorageType),
-		FilePath:    cfg.AuthStoragePath,
-		ServiceName: cfg.KeyringService,
-	})
+	factory := auth.NewStorageFactory(createStorageFactoryConfig(cfg))
 	
 	// Get current storage
 	storage, err := factory.Create()
@@ -96,11 +92,9 @@ func (cmd *AuthStorageMigrateCmd) Run(ctx *kong.Context) error {
 	cfg.LoadFromEnv()
 	
 	// Create source storage
-	sourceFactory := auth.NewStorageFactory(auth.StorageFactoryConfig{
-		Type:        auth.StorageType(cmd.From),
-		FilePath:    cfg.AuthStoragePath,
-		ServiceName: cfg.KeyringService,
-	})
+	sourceCfg := createStorageFactoryConfig(cfg)
+	sourceCfg.Type = auth.StorageType(cmd.From)
+	sourceFactory := auth.NewStorageFactory(sourceCfg)
 	
 	source, err := sourceFactory.Create()
 	if err != nil {
@@ -108,11 +102,10 @@ func (cmd *AuthStorageMigrateCmd) Run(ctx *kong.Context) error {
 	}
 	
 	// Create destination storage
-	destFactory := auth.NewStorageFactory(auth.StorageFactoryConfig{
-		Type:        auth.StorageType(cmd.To),
-		FilePath:    cfg.AuthStoragePath + ".migrated",
-		ServiceName: cfg.KeyringService,
-	})
+	destCfg := createStorageFactoryConfig(cfg)
+	destCfg.Type = auth.StorageType(cmd.To)
+	destCfg.FilePath = cfg.AuthStoragePath + ".migrated"
+	destFactory := auth.NewStorageFactory(destCfg)
 	
 	destination, err := destFactory.Create()
 	if err != nil {
@@ -173,11 +166,7 @@ func (cmd *AuthStorageTestCmd) Run(ctx *kong.Context) error {
 	cfg.LoadFromEnv()
 	
 	// Create storage
-	factory := auth.NewStorageFactory(auth.StorageFactoryConfig{
-		Type:        auth.StorageType(cfg.AuthStorageType),
-		FilePath:    cfg.AuthStoragePath,
-		ServiceName: cfg.KeyringService,
-	})
+	factory := auth.NewStorageFactory(createStorageFactoryConfig(cfg))
 	
 	storage, err := factory.Create()
 	if err != nil {

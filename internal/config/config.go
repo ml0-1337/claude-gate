@@ -39,6 +39,11 @@ type Config struct {
 	AuthStorageType   string  // "auto", "keyring", or "file"
 	KeyringService    string  // Service name for keyring
 	AutoMigrateTokens bool    // Automatically migrate tokens to keyring
+	
+	// macOS Keychain settings
+	KeychainTrustApp               bool // Trust the app by default (macOS only)
+	KeychainAccessibleWhenUnlocked bool // Items accessible when unlocked (macOS only)
+	KeychainSynchronizable         bool // Sync items to iCloud (macOS only)
 }
 
 // DefaultConfig returns default configuration
@@ -60,6 +65,9 @@ func DefaultConfig() *Config {
 		AuthStorageType:     "auto",
 		KeyringService:      "claude-gate",
 		AutoMigrateTokens:   true,
+		KeychainTrustApp:               true,  // Trust by default on macOS
+		KeychainAccessibleWhenUnlocked: true,  // Standard accessibility
+		KeychainSynchronizable:         false, // Don't sync tokens to iCloud
 	}
 }
 
@@ -127,6 +135,17 @@ func (c *Config) LoadFromEnv() {
 	}
 	if autoMigrate := os.Getenv("CLAUDE_GATE_AUTO_MIGRATE_TOKENS"); autoMigrate != "" {
 		c.AutoMigrateTokens = autoMigrate == "true" || autoMigrate == "1"
+	}
+	
+	// macOS Keychain settings
+	if trustApp := os.Getenv("CLAUDE_GATE_KEYCHAIN_TRUST_APP"); trustApp != "" {
+		c.KeychainTrustApp = trustApp == "true" || trustApp == "1"
+	}
+	if accessible := os.Getenv("CLAUDE_GATE_KEYCHAIN_ACCESSIBLE_WHEN_UNLOCKED"); accessible != "" {
+		c.KeychainAccessibleWhenUnlocked = accessible == "true" || accessible == "1"
+	}
+	if sync := os.Getenv("CLAUDE_GATE_KEYCHAIN_SYNCHRONIZABLE"); sync != "" {
+		c.KeychainSynchronizable = sync == "true" || sync == "1"
 	}
 }
 

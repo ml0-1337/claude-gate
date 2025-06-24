@@ -27,6 +27,11 @@ type KeyringConfig struct {
 	FileDir         string
 	PasswordPrompt  keyring.PromptFunc
 	Debug           bool
+	
+	// macOS-specific settings
+	KeychainTrustApplication       bool // Whether the app should be trusted by default
+	KeychainAccessibleWhenUnlocked bool // Whether items are accessible when device is locked
+	KeychainSynchronizable         bool // Whether items can sync to iCloud
 }
 
 // NewKeyringStorage creates a new keyring-based storage backend
@@ -49,14 +54,21 @@ func NewKeyringStorage(config KeyringConfig) (*KeyringStorage, error) {
 		FileDir:         config.FileDir,
 		FilePasswordFunc: config.PasswordPrompt,
 	}
+	
+	// Apply macOS-specific settings on Darwin
+	if runtime.GOOS == "darwin" {
+		keyringConfig.KeychainTrustApplication = config.KeychainTrustApplication
+		keyringConfig.KeychainAccessibleWhenUnlocked = config.KeychainAccessibleWhenUnlocked
+		keyringConfig.KeychainSynchronizable = config.KeychainSynchronizable
+	}
 
 	// If no backends specified, use platform defaults
 	if len(config.AllowedBackends) == 0 {
 		keyringConfig.AllowedBackends = getPlatformBackends()
 	}
 
-	// Open keyring
-	kr, err := keyring.Open(keyringConfig)
+	// Open keyring (use function variable for testing)
+	kr, err := openKeyring(keyringConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open keyring: %w", err)
 	}
@@ -303,3 +315,6 @@ func (s *KeyringStorage) recordLatency(op string, duration time.Duration) {
 	defer s.metricsMu.Unlock()
 	s.metrics.Latencies[op] = duration
 }
+
+// openKeyring is a variable to allow mocking in tests
+var openKeyring = keyring.Open

@@ -31,6 +31,11 @@ type StorageFactoryConfig struct {
 	FilePath       string
 	ServiceName    string
 	PasswordPrompt keyring.PromptFunc
+	
+	// macOS-specific settings
+	KeychainTrustApp               bool
+	KeychainAccessibleWhenUnlocked bool
+	KeychainSynchronizable         bool
 }
 
 // NewStorageFactory creates a new storage factory
@@ -54,14 +59,33 @@ func NewStorageFactory(config StorageFactoryConfig) *StorageFactory {
 		config.PasswordPrompt = defaultPasswordPrompt
 	}
 	
+	// Set keyring config
+	keyringCfg := KeyringConfig{
+		ServiceName:    config.ServiceName,
+		PasswordPrompt: config.PasswordPrompt,
+		Debug:          false,
+	}
+	
+	// Apply macOS settings from config (with defaults if not set)
+	if runtime.GOOS == "darwin" {
+		// Use config values, but default to true/true/false if not explicitly set
+		keyringCfg.KeychainTrustApplication = config.KeychainTrustApp
+		keyringCfg.KeychainAccessibleWhenUnlocked = config.KeychainAccessibleWhenUnlocked
+		keyringCfg.KeychainSynchronizable = config.KeychainSynchronizable
+		
+		// If the struct fields are zero values and we're on macOS, apply sensible defaults
+		// This handles backward compatibility when the fields aren't explicitly set
+		if !config.KeychainTrustApp && !config.KeychainAccessibleWhenUnlocked && !config.KeychainSynchronizable {
+			keyringCfg.KeychainTrustApplication = true       // Trust app by default
+			keyringCfg.KeychainAccessibleWhenUnlocked = true // Accessible when unlocked
+			keyringCfg.KeychainSynchronizable = false        // Don't sync to iCloud
+		}
+	}
+	
 	return &StorageFactory{
-		storageType: config.Type,
-		filePath:    config.FilePath,
-		keyringConfig: KeyringConfig{
-			ServiceName:    config.ServiceName,
-			PasswordPrompt: config.PasswordPrompt,
-			Debug:          false,
-		},
+		storageType:    config.Type,
+		filePath:       config.FilePath,
+		keyringConfig:  keyringCfg,
 		passwordPrompt: config.PasswordPrompt,
 	}
 }

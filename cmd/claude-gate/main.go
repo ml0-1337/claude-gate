@@ -21,6 +21,18 @@ import (
 
 var version = "0.1.0"
 
+// createStorageFactoryConfig creates a StorageFactoryConfig from the main Config
+func createStorageFactoryConfig(cfg *config.Config) auth.StorageFactoryConfig {
+	return auth.StorageFactoryConfig{
+		Type:                           auth.StorageType(cfg.AuthStorageType),
+		FilePath:                       cfg.AuthStoragePath,
+		ServiceName:                    cfg.KeyringService,
+		KeychainTrustApp:               cfg.KeychainTrustApp,
+		KeychainAccessibleWhenUnlocked: cfg.KeychainAccessibleWhenUnlocked,
+		KeychainSynchronizable:         cfg.KeychainSynchronizable,
+	}
+}
+
 type CLI struct {
 	Start     StartCmd     `cmd:"" help:"Start the Claude OAuth proxy server"`
 	Dashboard DashboardCmd `cmd:"" help:"Start server with interactive dashboard"`
@@ -108,11 +120,7 @@ func (s *StartCmd) Run() error {
 	out.Info("\nPress CTRL+C to stop the server")
 	
 	// Create proxy server with storage
-	factory := auth.NewStorageFactory(auth.StorageFactoryConfig{
-		Type:        auth.StorageType(cfg.AuthStorageType),
-		FilePath:    cfg.AuthStoragePath,
-		ServiceName: cfg.KeyringService,
-	})
+	factory := auth.NewStorageFactory(createStorageFactoryConfig(cfg))
 	
 	storage, err := factory.CreateWithMigration()
 	if err != nil {
@@ -165,11 +173,7 @@ func (d *DashboardCmd) Run() error {
 	// Check authentication unless skipped
 	if !d.SkipAuthCheck {
 		// Create storage using factory
-		factory := auth.NewStorageFactory(auth.StorageFactoryConfig{
-			Type:        auth.StorageType(cfg.AuthStorageType),
-			FilePath:    cfg.AuthStoragePath,
-			ServiceName: cfg.KeyringService,
-		})
+		factory := auth.NewStorageFactory(createStorageFactoryConfig(cfg))
 		
 		storage, err := factory.Create()
 		if err != nil {
@@ -185,11 +189,7 @@ func (d *DashboardCmd) Run() error {
 	}
 	
 	// Create proxy server with storage
-	factory := auth.NewStorageFactory(auth.StorageFactoryConfig{
-		Type:        auth.StorageType(cfg.AuthStorageType),
-		FilePath:    cfg.AuthStoragePath,
-		ServiceName: cfg.KeyringService,
-	})
+	factory := auth.NewStorageFactory(createStorageFactoryConfig(cfg))
 	
 	storage, err := factory.CreateWithMigration()
 	if err != nil {
@@ -261,11 +261,7 @@ func (l *LoginCmd) Run() error {
 	cfg.LoadFromEnv()
 	
 	// Create storage using factory
-	factory := auth.NewStorageFactory(auth.StorageFactoryConfig{
-		Type:        auth.StorageType(cfg.AuthStorageType),
-		FilePath:    cfg.AuthStoragePath,
-		ServiceName: cfg.KeyringService,
-	})
+	factory := auth.NewStorageFactory(createStorageFactoryConfig(cfg))
 	
 	storage, err := factory.Create()
 	if err != nil {
@@ -345,11 +341,7 @@ func (l *LogoutCmd) Run() error {
 	cfg.LoadFromEnv()
 	
 	// Create storage using factory
-	factory := auth.NewStorageFactory(auth.StorageFactoryConfig{
-		Type:        auth.StorageType(cfg.AuthStorageType),
-		FilePath:    cfg.AuthStoragePath,
-		ServiceName: cfg.KeyringService,
-	})
+	factory := auth.NewStorageFactory(createStorageFactoryConfig(cfg))
 	
 	storage, err := factory.Create()
 	if err != nil {
@@ -378,11 +370,7 @@ func (s *StatusCmd) Run() error {
 	cfg.LoadFromEnv()
 	
 	// Create storage using factory
-	factory := auth.NewStorageFactory(auth.StorageFactoryConfig{
-		Type:        auth.StorageType(cfg.AuthStorageType),
-		FilePath:    cfg.AuthStoragePath,
-		ServiceName: cfg.KeyringService,
-	})
+	factory := auth.NewStorageFactory(createStorageFactoryConfig(cfg))
 	
 	storage, err := factory.Create()
 	if err != nil {
