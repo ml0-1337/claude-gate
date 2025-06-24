@@ -70,11 +70,6 @@ We welcome contributions! Please see our [Contributing Guide](./docs/guides/cont
 
 MIT License - see [LICENSE](./LICENSE) for details.
 
-## Acknowledgments
-
-- Original Python implementation: [r3ggi/claude-auth-bridge](https://github.com/r3ggi/claude-auth-bridge)
-- Anthropic for Claude and the Claude Code CLI
-
 ---
 
 ⚠️ **Disclaimer**: This project is not affiliated with Anthropic. Use at your own risk and in accordance with Claude's Terms of Service.
