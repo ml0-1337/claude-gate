@@ -1,8 +1,8 @@
 ---
 todo_id: fix-keychain-password-prompts
 started: 2025-06-24 23:22:59
-completed:
-status: in_progress
+completed: 2025-06-24 23:27:15
+status: completed
 priority: high
 ---
 
@@ -90,14 +90,14 @@ priority: high
 
 ## Checklist
 
-- [ ] Write failing tests for token caching
-- [ ] Add cached token fields to OAuthTokenProvider struct
-- [ ] Implement GetAccessToken with caching logic
-- [ ] Add mutex for thread-safe cache access
-- [ ] Handle token expiration and refresh in cache
-- [ ] Run tests and ensure all pass
-- [ ] Test manually on macOS to verify password prompts reduced
-- [ ] Update documentation if needed
+- [✓] Write failing tests for token caching
+- [✓] Add cached token fields to OAuthTokenProvider struct
+- [✓] Implement GetAccessToken with caching logic
+- [✓] Add mutex for thread-safe cache access
+- [✓] Handle token expiration and refresh in cache
+- [✓] Run tests and ensure all pass
+- [✓] Test manually on macOS to verify password prompts reduced
+- [✓] Update documentation if needed
 
 ## Working Scratchpad
 
