@@ -156,6 +156,10 @@ func (s *KeyringStorage) Set(provider string, token *TokenInfo) error {
 		Data:        data,
 		Label:       fmt.Sprintf("Claude Gate - %s", provider),
 		Description: fmt.Sprintf("OAuth token for %s", provider),
+		// Trust this application by default (false = trust, due to double negative)
+		KeychainNotTrustApplication: false,
+		// Don't sync to iCloud for security
+		KeychainNotSynchronizable:   true,
 	}
 
 	if err := s.keyring.Set(item); err != nil {

@@ -250,6 +250,17 @@ If you still experience repeated prompts:
    - Go to Access Control tab
    - Ensure claude-gate is in the allowed applications list
 
+5. **Reset keychain items with proper trust settings:**
+   ```bash
+   # This will recreate all keychain items with correct trust settings
+   claude-gate auth storage reset
+   
+   # Skip confirmation prompt
+   claude-gate auth storage reset -f
+   ```
+   This command removes and recreates all stored tokens with the proper trust settings.
+   After running this, you should only see one password prompt when first accessing the keychain.
+
 ### Linux Keyring Not Available
 
 **Problem:** "keyring backend not available" on Linux.

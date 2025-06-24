@@ -15,6 +15,7 @@ type AuthStorageCmd struct {
 	Migrate AuthStorageMigrateCmd `cmd:"" help:"Migrate tokens between storage backends"`
 	Test    AuthStorageTestCmd    `cmd:"" help:"Test storage backend operations"`
 	Backup  AuthStorageBackupCmd  `cmd:"" help:"Create manual backup of tokens"`
+	Reset   AuthStorageResetCmd   `cmd:"" help:"Reset keychain items with proper trust settings"`
 }
 
 // AuthStorageStatusCmd shows storage backend status
@@ -287,5 +288,96 @@ func (cmd *AuthStorageBackupCmd) Run(ctx *kong.Context) error {
 	}
 	
 	fmt.Printf("Backup created: %s\n", backupPath)
+	return nil
+}
+
+// AuthStorageResetCmd resets keychain items with proper trust settings
+type AuthStorageResetCmd struct {
+	Force bool `help:"Skip confirmation prompt" short:"f"`
+}
+
+func (cmd *AuthStorageResetCmd) Run(ctx *kong.Context) error {
+	cfg := config.DefaultConfig()
+	cfg.LoadFromEnv()
+	
+	// Only applicable for keyring storage
+	if cfg.AuthStorageType == "file" {
+		fmt.Println("Reset is only applicable for keyring storage")
+		fmt.Println("Current storage type is 'file'")
+		return nil
+	}
+	
+	// Confirm with user unless forced
+	if !cmd.Force {
+		fmt.Println("WARNING: This will clear all stored tokens and require re-authentication.")
+		fmt.Print("Continue? (y/N): ")
+		var response string
+		fmt.Scanln(&response)
+		if response != "y" && response != "Y" {
+			fmt.Println("Cancelled")
+			return nil
+		}
+	}
+	
+	// Create storage
+	factory := auth.NewStorageFactory(createStorageFactoryConfig(cfg))
+	storage, err := factory.Create()
+	if err != nil {
+		return fmt.Errorf("failed to create storage: %w", err)
+	}
+	
+	// List all providers
+	providers, err := storage.List()
+	if err != nil {
+		return fmt.Errorf("failed to list providers: %w", err)
+	}
+	
+	if len(providers) == 0 {
+		fmt.Println("No tokens found to reset")
+		return nil
+	}
+	
+	// Store tokens temporarily
+	tokens := make(map[string]*auth.TokenInfo)
+	for _, provider := range providers {
+		token, err := storage.Get(provider)
+		if err != nil {
+			fmt.Printf("Warning: Failed to get token for %s: %v\n", provider, err)
+			continue
+		}
+		if token != nil {
+			tokens[provider] = token
+		}
+	}
+	
+	// Remove all tokens
+	fmt.Println("Removing existing tokens...")
+	for _, provider := range providers {
+		if err := storage.Remove(provider); err != nil {
+			fmt.Printf("Warning: Failed to remove token for %s: %v\n", provider, err)
+		}
+	}
+	
+	// Re-add tokens with proper trust settings
+	fmt.Println("Re-adding tokens with trust settings...")
+	successCount := 0
+	for provider, token := range tokens {
+		if err := storage.Set(provider, token); err != nil {
+			fmt.Printf("Error: Failed to restore token for %s: %v\n", provider, err)
+		} else {
+			successCount++
+			fmt.Printf("✓ Restored token for %s with trust settings\n", provider)
+		}
+	}
+	
+	fmt.Printf("\nReset complete: %d/%d tokens restored\n", successCount, len(tokens))
+	
+	if successCount < len(tokens) {
+		fmt.Println("\nSome tokens failed to restore. You may need to re-authenticate.")
+	} else {
+		fmt.Println("\nAll tokens restored successfully with proper trust settings.")
+		fmt.Println("You should no longer see repeated password prompts.")
+	}
+	
 	return nil
 }
