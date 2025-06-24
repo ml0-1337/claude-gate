@@ -1,8 +1,8 @@
 ---
 todo_id: fix-storage-inconsistency
 started: 2025-06-25 03:17:29
-completed:
-status: in_progress
+completed: 2025-06-25 03:35:00
+status: completed
 priority: high
 ---
 
