@@ -132,7 +132,7 @@ func TestOAuthTokenRefresh(t *testing.T) {
 func TestOAuthTokenProvider(t *testing.T) {
 	t.Run("returns valid token", func(t *testing.T) {
 		tempDir := t.TempDir()
-		storage := NewTokenStorage(tempDir + "/auth.json")
+		storage := NewFileStorage(tempDir + "/auth.json")
 		
 		// Store a valid token
 		validToken := &TokenInfo{
@@ -165,7 +165,7 @@ func TestOAuthTokenProvider(t *testing.T) {
 		defer server.Close()
 		
 		tempDir := t.TempDir()
-		storage := NewTokenStorage(tempDir + "/auth.json")
+		storage := NewFileStorage(tempDir + "/auth.json")
 		
 		// Store an expired token
 		expiredToken := &TokenInfo{
@@ -192,7 +192,7 @@ func TestOAuthTokenProvider(t *testing.T) {
 	
 	t.Run("returns error when no token", func(t *testing.T) {
 		tempDir := t.TempDir()
-		storage := NewTokenStorage(tempDir + "/auth.json")
+		storage := NewFileStorage(tempDir + "/auth.json")
 		
 		provider := NewOAuthTokenProvider(storage)
 		token, err := provider.GetAccessToken()
@@ -203,7 +203,7 @@ func TestOAuthTokenProvider(t *testing.T) {
 	
 	t.Run("caches token to avoid repeated storage access", func(t *testing.T) {
 		tempDir := t.TempDir()
-		storage := NewTokenStorage(tempDir + "/auth.json")
+		storage := NewFileStorage(tempDir + "/auth.json")
 		
 		// Store a valid token
 		validToken := &TokenInfo{
@@ -259,7 +259,7 @@ func TestOAuthTokenProvider(t *testing.T) {
 		defer server.Close()
 		
 		tempDir := t.TempDir()
-		storage := NewTokenStorage(tempDir + "/auth.json")
+		storage := NewFileStorage(tempDir + "/auth.json")
 		
 		// Store a token that needs refresh (expires in 4 minutes)
 		needsRefreshToken := &TokenInfo{
@@ -287,7 +287,7 @@ func TestOAuthTokenProvider(t *testing.T) {
 	
 	t.Run("concurrent access is thread-safe", func(t *testing.T) {
 		tempDir := t.TempDir()
-		storage := NewTokenStorage(tempDir + "/auth.json")
+		storage := NewFileStorage(tempDir + "/auth.json")
 		
 		// Store a valid token
 		validToken := &TokenInfo{

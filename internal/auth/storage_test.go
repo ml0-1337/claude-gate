@@ -15,14 +15,14 @@ func TestTokenStorage(t *testing.T) {
 	tempDir := t.TempDir()
 	
 	t.Run("creates storage with correct path", func(t *testing.T) {
-		storage := NewTokenStorage(filepath.Join(tempDir, ".claude-gate", "auth.json"))
+		storage := NewFileStorage(filepath.Join(tempDir, ".claude-gate", "auth.json"))
 		assert.NotNil(t, storage)
 		assert.Contains(t, storage.path, ".claude-gate")
 		assert.Contains(t, storage.path, "auth.json")
 	})
 	
 	t.Run("stores and retrieves OAuth token", func(t *testing.T) {
-		storage := NewTokenStorage(filepath.Join(tempDir, "test1", "auth.json"))
+		storage := NewFileStorage(filepath.Join(tempDir, "test1", "auth.json"))
 		
 		token := &TokenInfo{
 			Type:         "oauth",
@@ -44,7 +44,7 @@ func TestTokenStorage(t *testing.T) {
 	})
 	
 	t.Run("stores and retrieves API key", func(t *testing.T) {
-		storage := NewTokenStorage(filepath.Join(tempDir, "test2", "auth.json"))
+		storage := NewFileStorage(filepath.Join(tempDir, "test2", "auth.json"))
 		
 		token := &TokenInfo{
 			Type:   "api",
@@ -62,7 +62,7 @@ func TestTokenStorage(t *testing.T) {
 	})
 	
 	t.Run("returns nil for non-existent provider", func(t *testing.T) {
-		storage := NewTokenStorage(filepath.Join(tempDir, "test3", "auth.json"))
+		storage := NewFileStorage(filepath.Join(tempDir, "test3", "auth.json"))
 		
 		retrieved, err := storage.Get("non-existent")
 		assert.NoError(t, err)
@@ -70,7 +70,7 @@ func TestTokenStorage(t *testing.T) {
 	})
 	
 	t.Run("removes token", func(t *testing.T) {
-		storage := NewTokenStorage(filepath.Join(tempDir, "test4", "auth.json"))
+		storage := NewFileStorage(filepath.Join(tempDir, "test4", "auth.json"))
 		
 		token := &TokenInfo{
 			Type:   "api",
@@ -90,7 +90,7 @@ func TestTokenStorage(t *testing.T) {
 	
 	t.Run("creates directory if not exists", func(t *testing.T) {
 		authPath := filepath.Join(tempDir, "new-dir", "auth.json")
-		storage := NewTokenStorage(authPath)
+		storage := NewFileStorage(authPath)
 		
 		token := &TokenInfo{
 			Type:   "api",
@@ -107,7 +107,7 @@ func TestTokenStorage(t *testing.T) {
 	
 	t.Run("sets secure file permissions", func(t *testing.T) {
 		authPath := filepath.Join(tempDir, "perms", "auth.json")
-		storage := NewTokenStorage(authPath)
+		storage := NewFileStorage(authPath)
 		
 		token := &TokenInfo{
 			Type:   "api",
@@ -124,7 +124,7 @@ func TestTokenStorage(t *testing.T) {
 	})
 	
 	t.Run("handles multiple providers", func(t *testing.T) {
-		storage := NewTokenStorage(filepath.Join(tempDir, "multi", "auth.json"))
+		storage := NewFileStorage(filepath.Join(tempDir, "multi", "auth.json"))
 		
 		token1 := &TokenInfo{
 			Type:   "api",

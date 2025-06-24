@@ -86,7 +86,14 @@ func (s *StartCmd) Run() error {
 	
 	// Check authentication unless skipped
 	if !s.SkipAuthCheck {
-		storage := auth.NewTokenStorage(cfg.AuthStoragePath)
+		// Create storage using factory
+		factory := auth.NewStorageFactory(createStorageFactoryConfig(cfg))
+		
+		storage, err := factory.Create()
+		if err != nil {
+			return fmt.Errorf("failed to create storage: %w", err)
+		}
+		
 		token, err := storage.Get("anthropic")
 		if err != nil || token == nil || token.Type != "oauth" {
 			out.Error("No OAuth authentication found!")

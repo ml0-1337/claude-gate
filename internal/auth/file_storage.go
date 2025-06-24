@@ -257,12 +257,3 @@ func (s *FileStorage) recordLatency(op string, duration time.Duration) {
 	s.metrics.Latencies[op] = duration
 }
 
-// TokenStorage is a legacy alias for FileStorage
-// Deprecated: Use FileStorage instead
-type TokenStorage = FileStorage
-
-// NewTokenStorage is a legacy constructor
-// Deprecated: Use NewFileStorage instead
-func NewTokenStorage(path string) *TokenStorage {
-	return NewFileStorage(path)
-}
