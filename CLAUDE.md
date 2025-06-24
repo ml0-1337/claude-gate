@@ -93,19 +93,98 @@ The project uses Test-Driven Development (TDD) with comprehensive test coverage:
 
 Always write tests before implementing features. Use testify for assertions.
 
+## TDD Requirements (MANDATORY)
+
+**IMPORTANT**: This project follows the strict TDD workflow defined in the system CLAUDE.md. Test-first development is MANDATORY, not optional.
+
+### The Red-Green-Refactor-Commit (RGRC) Cycle
+
+1. **Red Phase**: Write failing tests FIRST
+   ```bash
+   # Write test in *_test.go file
+   go test -v ./path/to/package -run TestNewFeature
+   # Verify test fails before proceeding
+   ```
+
+2. **Green Phase**: Write MINIMUM code to pass
+   ```bash
+   # Implement just enough to make tests pass
+   go test -v ./path/to/package -run TestNewFeature
+   # All tests should now pass
+   ```
+
+3. **Refactor Phase**: Improve code quality
+   ```bash
+   # Clean up implementation while keeping tests green
+   make test  # Run full test suite with race detection
+   ```
+
+4. **Commit Phase**: Save progress
+   ```bash
+   git add -A
+   git commit -m "test: Add tests for [feature]"
+   git commit -m "feat: Implement [feature] to pass tests"
+   ```
+
+### When TDD is MANDATORY
+
+- **New Features**: Write acceptance tests first
+- **Bug Fixes**: Write test that reproduces bug first
+- **Refactoring**: Ensure tests exist before changing
+- **API Changes**: Contract tests before implementation
+
+### Go-Specific TDD Patterns
+
+```go
+// Example: Table-driven test (write BEFORE implementation)
+func TestAuthenticateRequest(t *testing.T) {
+    tests := []struct {
+        name    string
+        token   string
+        want    bool
+        wantErr bool
+    }{
+        {"valid token", "Bearer valid-token", true, false},
+        {"invalid token", "Bearer invalid", false, true},
+        {"missing token", "", false, true},
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            got, err := AuthenticateRequest(tt.token)
+            if tt.wantErr {
+                assert.Error(t, err)
+            } else {
+                assert.NoError(t, err)
+                assert.Equal(t, tt.want, got)
+            }
+        })
+    }
+}
+```
+
 ## Development Workflow
 
-1. **Feature Development**
+**REMINDER**: All development MUST follow the TDD workflow. No exceptions.
+
+1. **Feature Development** (TDD MANDATORY)
    - Create feature branch
-   - Write tests first (TDD)
-   - Implement feature
+   - **RED**: Write failing tests first
+   - Verify tests fail (run `go test -v`)
+   - **GREEN**: Implement minimum code to pass
+   - Verify all tests pass
+   - **REFACTOR**: Clean up implementation
    - Run `make test-all`
+   - **COMMIT**: Tests and implementation together
    - Submit PR with tests passing
 
-2. **Bug Fixes**
-   - Write test to reproduce bug
-   - Fix the issue
+2. **Bug Fixes** (TDD MANDATORY)
+   - **RED**: Write test that reproduces bug
+   - Verify test fails with current code
+   - **GREEN**: Fix the issue
    - Ensure all tests pass
+   - **REFACTOR**: Improve fix if needed
+   - **COMMIT**: Test and fix together
    - Document in TROUBLESHOOTING.md if user-facing
 
 3. **Documentation Updates**
@@ -144,6 +223,7 @@ Test NPM changes with: `make npm-test`
 
 ## Important Patterns
 
+- **TEST FIRST**: Never write implementation before tests
 - Use `internal/` for private packages (Go convention)
 - Follow clean architecture: separate concerns between packages
 - Use interfaces for testability and flexibility
@@ -151,6 +231,16 @@ Test NPM changes with: `make npm-test`
 - Handle errors explicitly, never ignore them
 - Use structured logging with clear messages
 - Write self-documenting code with meaningful names
+
+## System CLAUDE.md Compliance
+
+This project adheres to all laws and workflows defined in the system CLAUDE.md, including:
+- **Law 1**: NEVER Code Without Approval
+- **Law 2**: Plan-First Workflow
+- **Law 3**: Document Everything
+- **Law 4**: Test-First for Features & Fixes (MANDATORY)
+
+Refer to system CLAUDE.md for complete workflow requirements.
 
 ## Contribution Guidelines
 
@@ -167,3 +257,15 @@ See CONTRIBUTING.md for detailed guidelines. Key points:
 - `.claude/scripts/add-claude-coauthor.sh [num_commits]` - Add Claude as co-author to recent commits (default: 10)
   - Creates backup branch before making changes
   - Use when commits are missing Claude co-author attribution
+
+## Important Instruction Reminders
+
+The following instructions are inherited from system CLAUDE.md and apply to ALL work in this project:
+
+- **ALWAYS** use Test-Driven Development (Red-Green-Refactor-Commit)
+- **NEVER** write code without tests failing first
+- **ALWAYS** get approval before implementing
+- **ALWAYS** create todos for task tracking
+- **ALWAYS** document all decisions and research
+
+When in doubt, refer to system CLAUDE.md for the complete workflow.
