@@ -104,6 +104,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.requestLog.Add(msg)
 			m.viewport.SetContent(m.renderRequests())
 		}
+		// Continue listening for more events
+		cmds = append(cmds, m.listenForEvents())
 	}
 
 	// Update viewport
@@ -182,7 +184,7 @@ func (m *Model) renderStats() string {
 		m.createStatCard("Total Requests", fmt.Sprintf("%d", stats.TotalRequests), styles.InfoStyle),
 		m.createStatCard("Success Rate", fmt.Sprintf("%.1f%%", m.calculateSuccessRate(stats)), styles.SuccessStyle),
 		m.createStatCard("Avg Response", stats.AvgDuration.Round(time.Millisecond).String(), styles.InfoStyle),
-		m.createStatCard("Requests/sec", fmt.Sprintf("%.1f", stats.ReqPerSecond), styles.InfoStyle),
+		m.createStatCard("Requests/sec", formatReqPerSecond(stats.ReqPerSecond), styles.InfoStyle),
 	}
 	
 	return lipgloss.JoinHorizontal(lipgloss.Left, cards...)
@@ -270,6 +272,20 @@ func (m *Model) calculateSuccessRate(stats Stats) float64 {
 		return 0
 	}
 	return float64(stats.SuccessCount) / float64(stats.TotalRequests) * 100
+}
+
+// formatReqPerSecond formats the requests per second value
+func formatReqPerSecond(rate float64) string {
+	if rate < 0.1 {
+		// For very low rates, show 3 decimal places
+		return fmt.Sprintf("%.3f", rate)
+	} else if rate < 1.0 {
+		// For rates less than 1, show 2 decimal places
+		return fmt.Sprintf("%.2f", rate)
+	} else {
+		// For higher rates, show 1 decimal place
+		return fmt.Sprintf("%.1f", rate)
+	}
 }
 
 // listenForEvents listens for request events

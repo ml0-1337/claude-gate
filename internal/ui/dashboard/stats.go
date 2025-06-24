@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"fmt"
+	"math"
 	"sync"
 	"time"
 )
@@ -55,7 +56,33 @@ func (s *RequestStats) RecordRequest(statusCode int, duration time.Duration) {
 	// Add to recent requests
 	s.recentRequests = append(s.recentRequests, now)
 	
-	// Clean old requests outside window
+	// Calculate requests per second BEFORE cleaning
+	// This ensures we calculate rate including the new request
+	if len(s.recentRequests) >= 1 {
+		// For rate calculation, use the full window or actual span, whichever is smaller
+		var timeSpan float64
+		
+		if len(s.recentRequests) == 1 {
+			// For single request, calculate rate based on window
+			timeSpan = s.windowSize.Seconds()
+		} else {
+			// For multiple requests, use actual time span
+			actualSpan := now.Sub(s.recentRequests[0]).Seconds()
+			windowSpan := s.windowSize.Seconds()
+			timeSpan = math.Min(actualSpan, windowSpan)
+		}
+		
+		// Ensure minimum time span to avoid very high rates
+		if timeSpan < 1.0 {
+			timeSpan = 1.0
+		}
+		
+		s.reqPerSecond = float64(len(s.recentRequests)) / timeSpan
+	} else {
+		s.reqPerSecond = 0.0
+	}
+	
+	// Clean old requests outside window AFTER calculation
 	cutoff := now.Add(-s.windowSize)
 	i := 0
 	for i < len(s.recentRequests) && s.recentRequests[i].Before(cutoff) {
@@ -63,14 +90,6 @@ func (s *RequestStats) RecordRequest(statusCode int, duration time.Duration) {
 	}
 	if i > 0 {
 		s.recentRequests = s.recentRequests[i:]
-	}
-	
-	// Calculate requests per second
-	if len(s.recentRequests) > 1 {
-		timeSpan := now.Sub(s.recentRequests[0]).Seconds()
-		if timeSpan > 0 {
-			s.reqPerSecond = float64(len(s.recentRequests)) / timeSpan
-		}
 	}
 	
 	s.lastUpdate = now
