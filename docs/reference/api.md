@@ -7,10 +7,10 @@ Claude Gate acts as a transparent proxy to the Anthropic Claude API, adding OAut
 ## Base URL
 
 ```
-http://localhost:8080
+http://localhost:5789
 ```
 
-The proxy listens on port 8080 by default. This can be configured via environment variables.
+The proxy listens on port 5789 by default. This can be configured via environment variables.
 
 ## Authentication
 
@@ -18,7 +18,7 @@ Claude Gate handles OAuth authentication transparently. Before making API reques
 
 1. Authenticate using the CLI: `claude-gate auth login`
 2. Start the proxy server: `claude-gate start`
-3. Configure your client to use `http://localhost:8080` instead of `https://api.anthropic.com`
+3. Configure your client to use `http://localhost:5789` instead of `https://api.anthropic.com`
 
 ## Proxied Endpoints
 
@@ -120,7 +120,7 @@ Errors maintain Anthropic's format:
 from anthropic import Anthropic
 
 client = Anthropic(
-    base_url="http://localhost:8080/v1",
+    base_url="http://localhost:5789/v1",
     api_key="dummy"  # OAuth handled by proxy
 )
 ```
@@ -130,14 +130,14 @@ client = Anthropic(
 import Anthropic from '@anthropic-ai/sdk';
 
 const client = new Anthropic({
-  baseURL: 'http://localhost:8080/v1',
+  baseURL: 'http://localhost:5789/v1',
   apiKey: 'dummy'  // OAuth handled by proxy
 });
 ```
 
 ### cURL
 ```bash
-curl http://localhost:8080/v1/messages \
+curl http://localhost:5789/v1/messages \
   -H "Content-Type: application/json" \
   -d '{
     "model": "claude-3-5-sonnet-latest",
@@ -182,7 +182,7 @@ Prometheus-compatible metrics endpoint (future release).
 
 2. **Connection Refused**
    - Ensure proxy is running: `claude-gate start`
-   - Check port 8080 is not in use
+   - Check port 5789 is not in use
 
 3. **Model Not Found**
    - Use valid model names or aliases

@@ -86,7 +86,7 @@ claude-gate start [options]
 | Option | Environment Variable | Default | Description |
 |--------|---------------------|---------|-------------|
 | `--host` | `CLAUDE_GATE_HOST` | `127.0.0.1` | Host to bind to |
-| `--port` | `CLAUDE_GATE_PORT` | `8080` | Port to listen on |
+| `--port` | `CLAUDE_GATE_PORT` | `5789` | Port to listen on |
 | `--dashboard` | - | `false` | Enable interactive dashboard |
 | `--daemon` | - | `false` | Run in background |
 | `--proxy-auth-token` | `CLAUDE_GATE_PROXY_AUTH_TOKEN` | - | Require authentication |
@@ -237,7 +237,7 @@ Claude Gate respects the following environment variables:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `CLAUDE_GATE_HOST` | Default host for server | `127.0.0.1` |
-| `CLAUDE_GATE_PORT` | Default port for server | `8080` |
+| `CLAUDE_GATE_PORT` | Default port for server | `5789` |
 | `CLAUDE_GATE_CONFIG` | Configuration file path | `~/.claude-gate/config.yaml` |
 | `CLAUDE_GATE_LOG_LEVEL` | Default log level | `INFO` |
 | `CLAUDE_GATE_LOG_FILE` | Log file path | - |
@@ -290,7 +290,7 @@ export CLAUDE_GATE_LOG_LEVEL=INFO
 export CLAUDE_GATE_LOG_FILE=/var/log/claude-gate.log
 
 # Start with specific configuration
-claude-gate start --host 127.0.0.1 --port 8080
+claude-gate start --host 127.0.0.1 --port 5789
 
 # Monitor
 claude-gate status --json | jq

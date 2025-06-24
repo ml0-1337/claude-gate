@@ -11,13 +11,13 @@
     "cli",
     "api"
   ],
-  "homepage": "https://github.com/yourusername/claude-gate",
+  "homepage": "https://github.com/ml0-1337/claude-gate",
   "bugs": {
-    "url": "https://github.com/yourusername/claude-gate/issues"
+    "url": "https://github.com/ml0-1337/claude-gate/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/claude-gate.git"
+    "url": "git+https://github.com/ml0-1337/claude-gate.git"
   },
   "license": "MIT",
   "author": "Your Name <your.email@example.com>",

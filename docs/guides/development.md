@@ -49,7 +49,7 @@ git clone https://github.com/YOUR_USERNAME/claude-gate.git
 cd claude-gate
 
 # Add upstream remote
-git remote add upstream https://github.com/anthropics/claude-gate.git
+git remote add upstream https://github.com/ml0-1337/claude-gate.git
 ```
 
 ### 2. Install Dependencies

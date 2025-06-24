@@ -24,7 +24,7 @@ Claude Gate looks for configuration in the following locations:
 ```yaml
 # ~/.claude-gate/config.yaml
 host: 127.0.0.1
-port: 8080
+port: 5789
 log_level: info
 log_format: text
 proxy_auth_token: your-secret-token
@@ -46,7 +46,7 @@ tls:
 | Option | CLI Flag | Environment Variable | Config Key | Default | Description |
 |--------|----------|---------------------|------------|---------|-------------|
 | Host | `--host` | `CLAUDE_GATE_HOST` | `host` | `127.0.0.1` | IP address to bind to |
-| Port | `--port` | `CLAUDE_GATE_PORT` | `port` | `8080` | Port number for the server |
+| Port | `--port` | `CLAUDE_GATE_PORT` | `port` | `5789` | Port number for the server |
 | Proxy Auth Token | `--proxy-auth-token` | `CLAUDE_GATE_PROXY_AUTH_TOKEN` | `proxy_auth_token` | (none) | Token for proxy authentication |
 
 ### Logging Configuration
@@ -126,7 +126,7 @@ export CLAUDE_GATE_TOKEN_ENCRYPT=1
 ```yaml
 # ~/.claude-gate/config.dev.yaml
 host: 127.0.0.1
-port: 8080
+port: 5789
 log_level: debug
 log_format: text
 dashboard:
@@ -139,7 +139,7 @@ dashboard:
 ```yaml
 # ~/.claude-gate/config.prod.yaml
 host: 127.0.0.1
-port: 8080
+port: 5789
 log_level: info
 log_format: json
 log_file: /var/log/claude-gate.log
@@ -157,7 +157,7 @@ tls:
 ```yaml
 # config.docker.yaml
 host: 0.0.0.0  # Listen on all interfaces in container
-port: 8080
+port: 5789
 log_level: info
 log_format: json  # Structured logs for container logging
 ```

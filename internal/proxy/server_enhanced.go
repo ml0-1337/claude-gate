@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 	
-	"github.com/yourusername/claude-gate/internal/auth"
-	"github.com/yourusername/claude-gate/internal/ui/dashboard"
+	"github.com/ml0-1337/claude-gate/internal/auth"
+	"github.com/ml0-1337/claude-gate/internal/ui/dashboard"
 )
 
 // EnhancedProxyServer extends ProxyServer with dashboard functionality

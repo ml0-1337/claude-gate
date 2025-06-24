@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	
-	"github.com/yourusername/claude-gate/internal/auth"
+	"github.com/ml0-1337/claude-gate/internal/auth"
 )
 
 // HealthHandler handles health check requests

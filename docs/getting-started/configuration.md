@@ -30,7 +30,7 @@ Create a configuration file at `~/.claude-gate/config.yaml`:
 ```yaml
 # ~/.claude-gate/config.yaml
 host: 127.0.0.1
-port: 8080
+port: 5789
 log_level: info
 proxy_auth_token: your-secret-token
 dashboard:
@@ -45,7 +45,7 @@ dashboard:
 | Option | Environment Variable | Default | Description |
 |--------|---------------------|---------|-------------|
 | `--host` | `CLAUDE_GATE_HOST` | `127.0.0.1` | IP address to bind to |
-| `--port` | `CLAUDE_GATE_PORT` | `8080` | Port number to listen on |
+| `--port` | `CLAUDE_GATE_PORT` | `5789` | Port number to listen on |
 | `--proxy-auth-token` | `CLAUDE_GATE_PROXY_AUTH_TOKEN` | (none) | Enable proxy authentication |
 
 ### Logging
@@ -80,7 +80,7 @@ For local development with maximum visibility:
 ```bash
 claude-gate start \
   --host 127.0.0.1 \
-  --port 8080 \
+  --port 5789 \
   --log-level debug \
   --dashboard
 ```
@@ -91,7 +91,7 @@ For production use with security:
 
 ```bash
 export CLAUDE_GATE_HOST=127.0.0.1
-export CLAUDE_GATE_PORT=8080
+export CLAUDE_GATE_PORT=5789
 export CLAUDE_GATE_PROXY_AUTH_TOKEN=$(openssl rand -hex 32)
 export CLAUDE_GATE_LOG_LEVEL=info
 export CLAUDE_GATE_LOG_FILE=/var/log/claude-gate.log
@@ -108,10 +108,10 @@ FROM golang:1.22-alpine
 # ... build steps ...
 
 ENV CLAUDE_GATE_HOST=0.0.0.0
-ENV CLAUDE_GATE_PORT=8080
+ENV CLAUDE_GATE_PORT=5789
 ENV CLAUDE_GATE_LOG_LEVEL=info
 
-EXPOSE 8080
+EXPOSE 5789
 CMD ["claude-gate", "start"]
 ```
 
@@ -127,7 +127,7 @@ After=network.target
 [Service]
 Type=simple
 User=claude-gate
-Environment="CLAUDE_GATE_PORT=8080"
+Environment="CLAUDE_GATE_PORT=5789"
 Environment="CLAUDE_GATE_HOST=127.0.0.1"
 Environment="CLAUDE_GATE_LOG_LEVEL=info"
 ExecStart=/usr/local/bin/claude-gate start
@@ -163,7 +163,7 @@ To require authentication for proxy access:
 3. Include the token in your API requests:
    ```python
    client = anthropic.Anthropic(
-       base_url="http://localhost:8080",
+       base_url="http://localhost:5789",
        api_key="your-generated-token"  # Use the proxy auth token
    )
    ```
@@ -183,7 +183,7 @@ To enable HTTPS:
 3. Update your client to use HTTPS:
    ```python
    client = anthropic.Anthropic(
-       base_url="https://localhost:8080",
+       base_url="https://localhost:5789",
        api_key="sk-dummy"
    )
    ```
@@ -217,13 +217,13 @@ If you get "address already in use" error:
 
 1. Check what's using the port:
    ```bash
-   lsof -i :8080  # macOS/Linux
-   netstat -ano | findstr :8080  # Windows
+   lsof -i :5789  # macOS/Linux
+   netstat -ano | findstr :5789  # Windows
    ```
 
 2. Use a different port:
    ```bash
-   claude-gate start --port 8081
+   claude-gate start --port 5790
    ```
 
 ### Configuration Not Loading

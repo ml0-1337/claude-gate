@@ -78,7 +78,7 @@ snapshot:
 # Release configuration
 release:
   github:
-    owner: yourusername
+    owner: ml0-1337
     name: claude-gate
   
   # Release notes configuration
@@ -98,7 +98,7 @@ release:
     ### Direct Download
     Download the appropriate binary for your platform from the assets below.
     
-    **Full documentation**: [https://github.com/yourusername/claude-gate](https://github.com/yourusername/claude-gate)
+    **Full documentation**: [https://github.com/ml0-1337/claude-gate](https://github.com/ml0-1337/claude-gate)
   
   # Automatically generate release notes from commits
   prerelease: auto

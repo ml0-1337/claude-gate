@@ -44,7 +44,7 @@ func DefaultConfig() *Config {
 	
 	return &Config{
 		Host:                "127.0.0.1",
-		Port:                8000,
+		Port:                5789,
 		AnthropicBaseURL:    "https://api.anthropic.com",
 		RequestTimeout:      600 * time.Second,
 		MaxRequestSize:      10 * 1024 * 1024, // 10MB

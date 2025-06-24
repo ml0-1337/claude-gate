@@ -44,7 +44,7 @@ npm install -g claude-gate
 - Check supported platforms: darwin-x64, darwin-arm64, linux-x64, linux-arm64, win32-x64
 - For other platforms, build from source:
   ```bash
-  git clone https://github.com/anthropics/claude-gate
+  git clone https://github.com/ml0-1337/claude-gate
   cd claude-gate
   go build -o claude-gate ./cmd/claude-gate
   ```
@@ -87,12 +87,12 @@ node scripts/install.js
    ```
 2. Verify the port isn't already in use:
    ```bash
-   lsof -i :8080  # macOS/Linux
-   netstat -an | findstr :8080  # Windows
+   lsof -i :5789  # macOS/Linux
+   netstat -an | findstr :5789  # Windows
    ```
 3. Try a different port:
    ```bash
-   claude-gate start --port 8080
+   claude-gate start --port 5789
    ```
 
 ### SSE Streaming Not Working
@@ -171,7 +171,7 @@ claude-gate auth login   # Re-authenticate if needed
 
 If you're still experiencing issues:
 
-1. Check existing issues: https://github.com/anthropics/claude-gate/issues
+1. Check existing issues: https://github.com/ml0-1337/claude-gate/issues
 2. Create a new issue with:
    - Your OS and architecture (`uname -a` on Unix)
    - Node.js version (`node --version`)

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 	
-	"github.com/yourusername/claude-gate/internal/auth"
+	"github.com/ml0-1337/claude-gate/internal/auth"
 )
 
 // TokenProvider interface for OAuth token management

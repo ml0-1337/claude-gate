@@ -34,5 +34,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Environment variable configuration
 - Secure token storage
 
-[Unreleased]: https://github.com/anthropics/claude-gate/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/anthropics/claude-gate/releases/tag/v0.1.0
+[Unreleased]: https://github.com/ml0-1337/claude-gate/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/ml0-1337/claude-gate/releases/tag/v0.1.0

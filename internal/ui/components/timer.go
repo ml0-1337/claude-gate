@@ -7,7 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/yourusername/claude-gate/internal/ui/styles"
+	"github.com/ml0-1337/claude-gate/internal/ui/styles"
 )
 
 // TimerModel represents a countdown timer

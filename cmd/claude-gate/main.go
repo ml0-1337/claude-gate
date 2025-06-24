@@ -12,11 +12,11 @@ import (
 
 	"github.com/alecthomas/kong"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/yourusername/claude-gate/internal/auth"
-	"github.com/yourusername/claude-gate/internal/config"
-	"github.com/yourusername/claude-gate/internal/proxy"
-	"github.com/yourusername/claude-gate/internal/ui"
-	"github.com/yourusername/claude-gate/internal/ui/components"
+	"github.com/ml0-1337/claude-gate/internal/auth"
+	"github.com/ml0-1337/claude-gate/internal/config"
+	"github.com/ml0-1337/claude-gate/internal/proxy"
+	"github.com/ml0-1337/claude-gate/internal/ui"
+	"github.com/ml0-1337/claude-gate/internal/ui/components"
 )
 
 var version = "0.1.0"
@@ -31,7 +31,7 @@ type CLI struct {
 
 type StartCmd struct {
 	Host      string `help:"Host to bind the proxy server" default:"127.0.0.1"`
-	Port      int    `help:"Port to bind the proxy server" default:"8000"`
+	Port      int    `help:"Port to bind the proxy server" default:"5789"`
 	AuthToken string `help:"Enable proxy authentication with this token" env:"CLAUDE_GATE_PROXY_AUTH_TOKEN"`
 	LogLevel  string `help:"Logging level (DEBUG, INFO, WARNING, ERROR)" default:"INFO"`
 	SkipAuthCheck bool `help:"Skip OAuth authentication check"`
@@ -39,7 +39,7 @@ type StartCmd struct {
 
 type DashboardCmd struct {
 	Host      string `help:"Host to bind the proxy server" default:"127.0.0.1"`
-	Port      int    `help:"Port to bind the proxy server" default:"8000"`
+	Port      int    `help:"Port to bind the proxy server" default:"5789"`
 	AuthToken string `help:"Enable proxy authentication with this token" env:"CLAUDE_GATE_PROXY_AUTH_TOKEN"`
 	LogLevel  string `help:"Logging level (DEBUG, INFO, WARNING, ERROR)" default:"INFO"`
 	SkipAuthCheck bool `help:"Skip OAuth authentication check"`
@@ -56,7 +56,7 @@ type LogoutCmd struct{}
 type StatusCmd struct{}
 
 type TestCmd struct {
-	BaseURL string `help:"Proxy server URL" default:"http://localhost:8000"`
+	BaseURL string `help:"Proxy server URL" default:"http://localhost:5789"`
 }
 
 type VersionCmd struct{}
@@ -414,7 +414,7 @@ func (v *VersionCmd) Run() error {
 	out.Title("Claude Gate")
 	out.Info("Version: %s", version)
 	out.Info("Go OAuth proxy for Anthropic API")
-	out.Info("https://github.com/yourusername/claude-gate")
+	out.Info("https://github.com/ml0-1337/claude-gate")
 	return nil
 }
 

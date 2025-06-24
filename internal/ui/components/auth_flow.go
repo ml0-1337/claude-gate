@@ -7,7 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/yourusername/claude-gate/internal/ui/styles"
+	"github.com/ml0-1337/claude-gate/internal/ui/styles"
 )
 
 // AuthFlowStep represents a step in the OAuth flow

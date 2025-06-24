@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/yourusername/claude-gate/internal/ui/styles"
-	"github.com/yourusername/claude-gate/internal/ui/utils"
+	"github.com/ml0-1337/claude-gate/internal/ui/styles"
+	"github.com/ml0-1337/claude-gate/internal/ui/utils"
 )
 
 // Output provides methods for formatted terminal output

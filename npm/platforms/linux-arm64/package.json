@@ -2,9 +2,13 @@
   "name": "@claude-gate/linux-arm64",
   "version": "0.1.0",
   "description": "claude-gate binary for Linux ARM64",
+  "homepage": "https://github.com/ml0-1337/claude-gate",
+  "bugs": {
+    "url": "https://github.com/ml0-1337/claude-gate/issues"
+  },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/claude-gate.git"
+    "url": "git+https://github.com/ml0-1337/claude-gate.git"
   },
   "license": "MIT",
   "author": "Your Name <your.email@example.com>",

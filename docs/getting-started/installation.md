@@ -27,7 +27,7 @@ This will automatically download the correct binary for your platform.
 If you prefer Homebrew:
 
 ```bash
-brew tap anthropics/tap
+brew tap ml0-1337/tap
 brew install claude-gate
 ```
 
@@ -36,12 +36,12 @@ brew install claude-gate
 If you have Go 1.22+ installed:
 
 ```bash
-go install github.com/anthropics/claude-gate/cmd/claude-gate@latest
+go install github.com/ml0-1337/claude-gate/cmd/claude-gate@latest
 ```
 
 ### Direct Download
 
-Download pre-built binaries from the [releases page](https://github.com/anthropics/claude-gate/releases).
+Download pre-built binaries from the [releases page](https://github.com/ml0-1337/claude-gate/releases).
 
 1. Download the appropriate binary for your platform
 2. Extract the archive
@@ -72,7 +72,7 @@ If you're planning to contribute to Claude Gate, see our [Development Guide](../
 
 ```bash
 # Clone the repository
-git clone https://github.com/anthropics/claude-gate.git
+git clone https://github.com/ml0-1337/claude-gate.git
 cd claude-gate
 
 # Install dependencies
@@ -90,13 +90,13 @@ make test
 Claude Gate uses the following default settings:
 
 - **Host**: `127.0.0.1` (localhost only)
-- **Port**: `8080`
+- **Port**: `5789`
 
 You can customize these using environment variables:
 
 ```bash
 export CLAUDE_GATE_HOST=127.0.0.1
-export CLAUDE_GATE_PORT=8080
+export CLAUDE_GATE_PORT=5789
 export CLAUDE_GATE_PROXY_AUTH_TOKEN=your-token  # Optional: Enable proxy authentication
 export CLAUDE_GATE_LOG_LEVEL=INFO               # Options: DEBUG, INFO, WARNING, ERROR
 ```

@@ -1,4 +1,4 @@
-module github.com/yourusername/claude-gate
+module github.com/ml0-1337/claude-gate
 
 go 1.24.4
 

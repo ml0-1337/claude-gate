@@ -24,7 +24,7 @@ claude-gate start
 import anthropic
 
 client = anthropic.Anthropic(
-    base_url="http://localhost:8080",
+    base_url="http://localhost:5789",
     api_key="sk-dummy"
 )
 ```
@@ -37,7 +37,7 @@ client = anthropic.Anthropic(
 
 ## Documentation
 
-Full documentation: https://github.com/anthropics/claude-gate
+Full documentation: https://github.com/ml0-1337/claude-gate
 
 ## License
 

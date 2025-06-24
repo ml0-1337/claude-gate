@@ -32,7 +32,7 @@ go test -v ./...  # Quick test during development
 
 ### Running
 ```bash
-claude-gate start --host 127.0.0.1 --port 8000  # Start proxy server
+claude-gate start --host 127.0.0.1 --port 5789  # Start proxy server
 claude-gate dashboard                            # Start with interactive dashboard
 claude-gate auth login                           # Authenticate with Claude
 ```
@@ -69,7 +69,7 @@ The codebase follows clean architecture principles with clear separation of conc
    - Reusable components (spinner, progress, styles)
 
 ### Request Flow
-1. Client connects to local proxy (default: 127.0.0.1:8000)
+1. Client connects to local proxy (default: 127.0.0.1:5789)
 2. Proxy validates authentication token
 3. Request transformed to identify as "Claude Code"
 4. Forwarded to Claude API with OAuth credentials

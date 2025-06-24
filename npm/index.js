@@ -24,7 +24,7 @@ Then use it from the command line:
   claude-gate --help
 
 For more information, visit:
-https://github.com/yourusername/claude-gate
+https://github.com/ml0-1337/claude-gate
 `);
     process.exit(1);
   }

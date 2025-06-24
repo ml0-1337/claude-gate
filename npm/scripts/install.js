@@ -112,7 +112,7 @@ Try running:
   npm install ${platform.packageName}
 
 Or download the binary manually from:
-  https://github.com/yourusername/claude-gate/releases
+  https://github.com/ml0-1337/claude-gate/releases
 `);
       process.exit(1);
     }
@@ -141,7 +141,7 @@ Or download the binary manually from:
   } catch (error) {
     console.error('Installation failed:', error.message);
     console.error('\nFor manual installation instructions, visit:');
-    console.error('https://github.com/yourusername/claude-gate#installation');
+    console.error('https://github.com/ml0-1337/claude-gate#installation');
     process.exit(1);
   }
 }

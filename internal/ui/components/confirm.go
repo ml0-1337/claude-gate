@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/yourusername/claude-gate/internal/ui/styles"
+	"github.com/ml0-1337/claude-gate/internal/ui/styles"
 )
 
 // ConfirmModel represents a confirmation prompt

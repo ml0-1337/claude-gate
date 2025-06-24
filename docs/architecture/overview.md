@@ -67,7 +67,7 @@ Key transformations:
 ### 4. Configuration (`internal/config/`)
 
 Centralized configuration management:
-- Default port: 8080
+- Default port: 5789
 - Configurable via environment variables
 - Runtime configuration validation
 

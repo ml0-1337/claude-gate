@@ -29,7 +29,7 @@ Start Claude Gate in the background:
 claude-gate start
 ```
 
-The proxy server will start on `http://localhost:8080` by default.
+The proxy server will start on `http://localhost:5789` by default.
 
 To run with a custom port:
 
@@ -47,7 +47,7 @@ Now you can use any Anthropic SDK with Claude Gate as the proxy:
 import anthropic
 
 client = anthropic.Anthropic(
-    base_url="http://localhost:8080",
+    base_url="http://localhost:5789",
     api_key="sk-dummy"  # Can be any string
 )
 
@@ -68,7 +68,7 @@ print(response.content[0].text)
 import Anthropic from '@anthropic-ai/sdk';
 
 const client = new Anthropic({
-  baseURL: 'http://localhost:8080',
+  baseURL: 'http://localhost:5789',
   apiKey: 'sk-dummy', // Can be any string
 });
 
@@ -86,7 +86,7 @@ console.log(response.content[0].text);
 ### cURL Example
 
 ```bash
-curl -X POST http://localhost:8080/v1/messages \
+curl -X POST http://localhost:5789/v1/messages \
   -H "Content-Type: application/json" \
   -H "X-API-Key: sk-dummy" \
   -H "anthropic-version: 2023-06-01" \

@@ -27,7 +27,7 @@ Thank you for your interest in contributing to Claude Gate! This guide will help
 
 ```bash
 # Clone the repository
-git clone https://github.com/anthropics/claude-gate.git
+git clone https://github.com/ml0-1337/claude-gate.git
 cd claude-gate
 
 # Install dependencies
@@ -325,7 +325,7 @@ make release VERSION=1.2.3
 - [Project Documentation](../README.md)
 - [Architecture Overview](../architecture/overview.md)
 - [Security Policy](../architecture/security.md)
-- [Issue Tracker](https://github.com/anthropics/claude-gate/issues)
+- [Issue Tracker](https://github.com/ml0-1337/claude-gate/issues)
 
 ### Communication
 

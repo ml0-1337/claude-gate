@@ -154,7 +154,7 @@ jobs:
           
           #### Homebrew (macOS/Linux)
           \`\`\`bash
-          brew install yourusername/tap/claude-gate
+          brew install ml0-1337/tap/claude-gate
           \`\`\`
           
           #### Direct Download
@@ -169,7 +169,7 @@ jobs:
           See the full changelog below for details on what's new in this release.
           
           ### 🐛 Found an issue?
-          Please report it at: https://github.com/yourusername/claude-gate/issues
+          Please report it at: https://github.com/ml0-1337/claude-gate/issues
           "
 
   test-npm-packages:
