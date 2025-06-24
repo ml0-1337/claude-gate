@@ -1,0 +1,24 @@
+{
+  "name": "@claude-gate/linux-x64",
+  "version": "0.1.0",
+  "description": "claude-gate binary for Linux x64",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/claude-gate.git"
+  },
+  "license": "MIT",
+  "author": "Your Name <your.email@example.com>",
+  "main": "bin",
+  "files": [
+    "bin"
+  ],
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

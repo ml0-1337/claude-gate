@@ -1,0 +1,204 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          check-latest: true
+          cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Validate tag
+        id: validate_tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${{ github.ref_name }}"
+          fi
+          
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.\-]+)?(\+[a-zA-Z0-9\.\-]+)?$ ]]; then
+            echo "Invalid tag format: $TAG"
+            echo "Tag must follow semantic versioning (e.g., v1.0.0, v1.0.0-beta.1)"
+            exit 1
+          fi
+          
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+
+      - name: Run tests
+        run: |
+          go test -v -race -coverprofile=coverage.out ./...
+          go tool cover -html=coverage.out -o coverage.html
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.html
+
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          install-only: true
+          version: latest
+
+      - name: Build with GoReleaser
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          goreleaser release --clean
+
+      - name: Prepare NPM packages
+        run: |
+          # Create NPM package directories
+          mkdir -p npm-packages/{main,darwin-x64,darwin-arm64,linux-x64,linux-arm64,win32-x64}
+          
+          # Extract version
+          VERSION="${{ steps.validate_tag.outputs.version }}"
+          
+          # Copy binaries to platform packages
+          # macOS Intel
+          tar -xzf dist/claude-gate_${VERSION}_Darwin_x86_64.tar.gz -C npm-packages/darwin-x64
+          mv npm-packages/darwin-x64/claude-gate npm-packages/darwin-x64/bin
+          
+          # macOS ARM
+          tar -xzf dist/claude-gate_${VERSION}_Darwin_arm64.tar.gz -C npm-packages/darwin-arm64
+          mv npm-packages/darwin-arm64/claude-gate npm-packages/darwin-arm64/bin
+          
+          # Linux x64
+          tar -xzf dist/claude-gate_${VERSION}_Linux_x86_64.tar.gz -C npm-packages/linux-x64
+          mv npm-packages/linux-x64/claude-gate npm-packages/linux-x64/bin
+          
+          # Linux ARM64
+          tar -xzf dist/claude-gate_${VERSION}_Linux_arm64.tar.gz -C npm-packages/linux-arm64
+          mv npm-packages/linux-arm64/claude-gate npm-packages/linux-arm64/bin
+          
+          # Windows x64
+          unzip -q dist/claude-gate_${VERSION}_Windows_x86_64.zip -d npm-packages/win32-x64
+          mv npm-packages/win32-x64/claude-gate.exe npm-packages/win32-x64/bin.exe
+          
+          # Copy NPM package files
+          cp -r npm/* npm-packages/main/
+          
+          # Update versions in all package.json files
+          for pkg in npm-packages/*; do
+            if [ -f "$pkg/package.json" ]; then
+              sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$pkg/package.json"
+            fi
+          done
+
+      - name: Publish NPM packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          # Publish platform packages first
+          for pkg in darwin-x64 darwin-arm64 linux-x64 linux-arm64 win32-x64; do
+            cd npm-packages/$pkg
+            npm publish --access public
+            cd ../..
+          done
+          
+          # Publish main package last
+          cd npm-packages/main
+          npm publish --access public
+
+      - name: Create GitHub Release Summary
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.validate_tag.outputs.version }}"
+          
+          # Update release with additional information
+          gh release edit v${VERSION} --notes "
+          ## 🎉 Claude Gate v${VERSION} Released!
+          
+          ### 📦 Installation Methods
+          
+          #### NPM (Recommended)
+          \`\`\`bash
+          npm install -g claude-gate@${VERSION}
+          \`\`\`
+          
+          #### Homebrew (macOS/Linux)
+          \`\`\`bash
+          brew install yourusername/tap/claude-gate
+          \`\`\`
+          
+          #### Direct Download
+          Download the appropriate binary for your platform from the assets below.
+          
+          ### 🔧 Supported Platforms
+          - macOS (Intel & Apple Silicon)
+          - Linux (x64 & ARM64)
+          - Windows (x64)
+          
+          ### 📝 Changelog
+          See the full changelog below for details on what's new in this release.
+          
+          ### 🐛 Found an issue?
+          Please report it at: https://github.com/yourusername/claude-gate/issues
+          "
+
+  test-npm-packages:
+    needs: release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [18, 20]
+    
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Wait for NPM propagation
+        run: |
+          sleep 60  # Wait for packages to be available on NPM
+
+      - name: Test NPM installation
+        run: |
+          npm install -g claude-gate@${{ needs.release.outputs.version }}
+          claude-gate version
+
+      - name: Test basic functionality
+        run: |
+          claude-gate test || true  # Don't fail if proxy isn't running
+
+      - name: Uninstall
+        run: |
+          npm uninstall -g claude-gate

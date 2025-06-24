@@ -23,3 +23,36 @@ go.work.sum
 
 # env file
 .env
+
+# Build artifacts
+dist/
+claude-gate
+
+# NPM
+node_modules/
+*.tgz
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test coverage
+coverage/
+*.coverage
+*.cover
+coverage.html
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/

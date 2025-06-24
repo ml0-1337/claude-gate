@@ -1,0 +1,176 @@
+# .goreleaser.yml
+# GoReleaser configuration for Claude Gate
+# This file configures automated builds for multiple platforms
+
+project_name: claude-gate
+
+# Build configuration
+builds:
+  - id: claude-gate
+    main: ./cmd/claude-gate
+    binary: claude-gate
+    
+    # Build for multiple platforms
+    goos:
+      - darwin
+      - linux
+      - windows
+    
+    goarch:
+      - amd64
+      - arm64
+    
+    # Skip certain combinations that don't make sense
+    ignore:
+      - goos: windows
+        goarch: arm64
+    
+    # Optimize binary size and embed version info
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=goreleaser
+    
+    # Environment variables for reproducible builds
+    env:
+      - CGO_ENABLED=0
+    
+    # Custom build tags if needed
+    tags:
+      - release
+
+# Archive configuration
+archives:
+  - id: claude-gate-archive
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    
+    # Use tar.gz for Unix, zip for Windows
+    format_overrides:
+      - goos: windows
+        format: zip
+    
+    # Files to include in the archive
+    files:
+      - README.md
+      - LICENSE
+    
+    # Create a more user-friendly structure
+    wrap_in_directory: true
+
+# Checksum configuration
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+# Snapshot configuration for testing
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+# Release configuration
+release:
+  github:
+    owner: yourusername
+    name: claude-gate
+  
+  # Release notes configuration
+  header: |
+    ## Claude Gate v{{ .Version }}
+    
+    OAuth proxy for Anthropic's Claude API - FREE usage for Pro/Max subscribers
+  
+  footer: |
+    ## Installation
+    
+    ### Via NPM (Recommended)
+    ```bash
+    npm install -g claude-gate
+    ```
+    
+    ### Direct Download
+    Download the appropriate binary for your platform from the assets below.
+    
+    **Full documentation**: [https://github.com/yourusername/claude-gate](https://github.com/yourusername/claude-gate)
+  
+  # Automatically generate release notes from commits
+  prerelease: auto
+  
+  # Draft releases first for review
+  draft: false
+
+# Changelog configuration
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - 'typo'
+      - 'Merge pull request'
+      - 'Merge branch'
+  
+  groups:
+    - title: 'Features'
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: 'Bug Fixes'
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: 'Performance'
+      regexp: "^.*perf[(\\w)]*:+.*$"
+      order: 2
+    - title: 'Other'
+      order: 999
+
+# NPM publish configuration
+publishers:
+  - name: npm
+    ids:
+      - claude-gate-archive
+    
+    # NPM package configuration
+    cmd: |
+      npm version {{ .Version }} --no-git-tag-version
+      npm publish --access public
+    
+    dir: ./npm
+    
+    env:
+      - NPM_AUTH_TOKEN={{ .Env.NPM_AUTH_TOKEN }}
+
+# Announce configuration
+announce:
+  skip: true
+
+# Sign configuration (optional, requires cosign)
+# signs:
+#   - cmd: cosign
+#     stdin: '{{ .Env.COSIGN_PWD }}'
+#     args:
+#       - sign-blob
+#       - '--key=cosign.key'
+#       - '--output-signature=${signature}'
+#       - '${artifact}'
+#     artifacts: checksum
+
+# SBOM generation
+sboms:
+  - artifacts: archive
+
+# Completion scripts generation
+completions:
+  - shells:
+      - bash
+      - zsh
+      - fish
+      - powershell

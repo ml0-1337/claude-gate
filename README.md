@@ -18,15 +18,30 @@ Claude Gate is a Go rewrite of claude-auth-bridge that maintains the critical OA
 
 ## Installation
 
+### Via NPM (Recommended)
+
+```bash
+npm install -g claude-gate
+```
+
+This will automatically download the correct binary for your platform.
+
+### Via Homebrew (macOS/Linux)
+
+```bash
+brew tap yourusername/tap
+brew install claude-gate
+```
+
 ### From Source
 
 ```bash
 go install github.com/yourusername/claude-gate/cmd/claude-gate@latest
 ```
 
-### Binary Releases
+### Direct Download
 
-Coming soon via npm distribution.
+Download pre-built binaries from the [releases page](https://github.com/yourusername/claude-gate/releases).
 
 ## Quick Start
 

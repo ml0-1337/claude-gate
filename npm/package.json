@@ -1,0 +1,55 @@
+{
+  "name": "claude-gate",
+  "version": "0.1.0",
+  "description": "High-performance OAuth proxy for Anthropic's Claude API - FREE usage for Pro/Max subscribers",
+  "keywords": [
+    "claude",
+    "anthropic",
+    "ai",
+    "oauth",
+    "proxy",
+    "cli",
+    "api"
+  ],
+  "homepage": "https://github.com/yourusername/claude-gate",
+  "bugs": {
+    "url": "https://github.com/yourusername/claude-gate/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/claude-gate.git"
+  },
+  "license": "MIT",
+  "author": "Your Name <your.email@example.com>",
+  "main": "index.js",
+  "bin": {
+    "claude-gate": "./bin/claude-gate"
+  },
+  "scripts": {
+    "postinstall": "node scripts/install.js",
+    "preuninstall": "node scripts/uninstall.js"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "optionalDependencies": {
+    "@claude-gate/darwin-x64": "0.1.0",
+    "@claude-gate/darwin-arm64": "0.1.0",
+    "@claude-gate/linux-x64": "0.1.0",
+    "@claude-gate/linux-arm64": "0.1.0",
+    "@claude-gate/win32-x64": "0.1.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
