@@ -86,7 +86,7 @@ func (s *StartCmd) Run() error {
 		fmt.Println("⚠️  Proxy authentication disabled - anyone can use this proxy")
 	}
 	
-	fmt.Println("\nPress CTRL+C to stop the server\n")
+	fmt.Println("\nPress CTRL+C to stop the server")
 	
 	// Create proxy server
 	storage := auth.NewTokenStorage(cfg.AuthStoragePath)
@@ -202,7 +202,7 @@ func (s *StatusCmd) Run() error {
 	cfg := config.DefaultConfig()
 	storage := auth.NewTokenStorage(cfg.AuthStoragePath)
 	
-	fmt.Println("\nClaude Auth Bridge Status\n")
+	fmt.Println("\nClaude Auth Bridge Status")
 	
 	// Check authentication
 	token, err := storage.Get("anthropic")
