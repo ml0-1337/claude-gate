@@ -9,11 +9,11 @@ import (
 
 // HealthHandler handles health check requests
 type HealthHandler struct {
-	storage *auth.TokenStorage
+	storage auth.StorageBackend
 }
 
 // NewHealthHandler creates a new health handler
-func NewHealthHandler(storage *auth.TokenStorage) *HealthHandler {
+func NewHealthHandler(storage auth.StorageBackend) *HealthHandler {
 	return &HealthHandler{
 		storage: storage,
 	}

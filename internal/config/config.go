@@ -34,8 +34,11 @@ type Config struct {
 	// CORS settings
 	CORSAllowOrigins []string
 	
-	// Storage paths
-	AuthStoragePath string
+	// Storage settings
+	AuthStoragePath   string
+	AuthStorageType   string  // "auto", "keyring", or "file"
+	KeyringService    string  // Service name for keyring
+	AutoMigrateTokens bool    // Automatically migrate tokens to keyring
 }
 
 // DefaultConfig returns default configuration
@@ -54,6 +57,9 @@ func DefaultConfig() *Config {
 		RateLimitPerMinute:  60,
 		CORSAllowOrigins:    []string{"*"},
 		AuthStoragePath:     filepath.Join(homeDir, ".claude-gate", "auth.json"),
+		AuthStorageType:     "auto",
+		KeyringService:      "claude-gate",
+		AutoMigrateTokens:   true,
 	}
 }
 
@@ -107,6 +113,20 @@ func (c *Config) LoadFromEnv() {
 		if l, err := strconv.Atoi(limit); err == nil {
 			c.RateLimitPerMinute = l
 		}
+	}
+	
+	// Storage settings
+	if path := os.Getenv("CLAUDE_GATE_AUTH_STORAGE_PATH"); path != "" {
+		c.AuthStoragePath = path
+	}
+	if storageType := os.Getenv("CLAUDE_GATE_AUTH_STORAGE_TYPE"); storageType != "" {
+		c.AuthStorageType = storageType
+	}
+	if service := os.Getenv("CLAUDE_GATE_KEYRING_SERVICE"); service != "" {
+		c.KeyringService = service
+	}
+	if autoMigrate := os.Getenv("CLAUDE_GATE_AUTO_MIGRATE_TOKENS"); autoMigrate != "" {
+		c.AutoMigrateTokens = autoMigrate == "true" || autoMigrate == "1"
 	}
 }
 

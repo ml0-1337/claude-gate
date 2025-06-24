@@ -12,11 +12,11 @@ import (
 // OAuthTokenProvider implements TokenProvider interface for the proxy
 type OAuthTokenProvider struct {
 	client  *OAuthClient
-	storage *TokenStorage
+	storage StorageBackend
 }
 
 // NewOAuthTokenProvider creates a new OAuth token provider
-func NewOAuthTokenProvider(storage *TokenStorage) *OAuthTokenProvider {
+func NewOAuthTokenProvider(storage StorageBackend) *OAuthTokenProvider {
 	return &OAuthTokenProvider{
 		client:  NewOAuthClient(),
 		storage: storage,

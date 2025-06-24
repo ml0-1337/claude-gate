@@ -17,20 +17,37 @@ Claude Gate uses OAuth 2.0 with Proof Key for Code Exchange (PKCE) for authentic
 ### Token Security
 
 #### Current Implementation
-- Tokens stored in `~/.claude-gate/auth.json`
+- **OS Keychain Integration** (Implemented)
+  - macOS: Keychain Services
+  - Linux: Secret Service API (GNOME Keyring, KWallet)
+  - Windows: Credential Manager
+- **Automatic Fallback**: File storage when keychain unavailable
+- **Zero-Configuration**: Auto-detects best storage backend
+- **Seamless Migration**: Automatic migration from JSON to keychain
 - File permissions set to 0600 (user read/write only)
 - Automatic token refresh before expiration
 - Tokens never transmitted to clients
 
-#### Planned Enhancements
-1. **OS Keychain Integration**
-   - macOS: Keychain Services
-   - Linux: Secret Service API
-   - Windows: Credential Manager
+#### Storage Backend Selection
+1. **Auto Mode** (Default)
+   - Automatically selects the most secure available backend
+   - Prefers OS keychain/keystore over file storage
+   - Transparent fallback on errors
    
-2. **Encrypted File Storage**
-   - AES-256 encryption for file-based fallback
-   - Key derivation from system entropy
+2. **Keyring Mode**
+   - Forces use of OS-native secure storage
+   - Fails if keychain not available
+   
+3. **File Mode**
+   - Traditional JSON file storage
+   - Encrypted file storage using JOSE (PBES2_HS256_A128KW + A256GCM)
+   - For environments without keychain access
+
+#### Storage Management
+- `claude-gate auth storage status`: Check current backend
+- `claude-gate auth storage migrate`: Migrate between backends
+- `claude-gate auth storage test`: Verify storage operations
+- `claude-gate auth storage backup`: Create manual backup
 
 ### Network Security
 
@@ -184,8 +201,8 @@ Claude Gate uses OAuth 2.0 with Proof Key for Code Exchange (PKCE) for authentic
 
 ### Q1 2025
 - [x] OAuth 2.0 PKCE implementation
-- [ ] OS keychain integration
-- [ ] Encrypted file storage
+- [x] OS keychain integration (Completed)
+- [x] Encrypted file storage (via 99designs/keyring FileBackend)
 - [ ] Basic rate limiting
 
 ### Q2 2025

@@ -182,7 +182,7 @@ type ProxyServer struct {
 }
 
 // NewProxyServer creates a new proxy server with health endpoints
-func NewProxyServer(config *ProxyConfig, addr string, storage *auth.TokenStorage) *ProxyServer {
+func NewProxyServer(config *ProxyConfig, addr string, storage auth.StorageBackend) *ProxyServer {
 	proxyHandler := NewProxyHandler(config)
 	healthHandler := NewHealthHandler(storage)
 	mux := CreateMux(proxyHandler, healthHandler)

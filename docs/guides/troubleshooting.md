@@ -75,6 +75,11 @@ node scripts/install.js
    ```
 2. Check if you have an active Claude Pro/Max subscription
 3. Ensure you're using the correct authorization code
+4. Check storage backend status:
+   ```bash
+   claude-gate auth storage status
+   ```
+5. For keychain issues, see [Token Storage Guide](./storage.md)
 
 ### Proxy Connection Refused
 
@@ -191,6 +196,80 @@ This will show detailed information about:
 - Request/response transformations
 - Proxy operations
 - Error details
+
+## Token Storage Issues
+
+### Keychain Access Denied
+
+**Problem:** "keyring access denied" or repeated password prompts on macOS.
+
+**Solution:**
+1. When prompted, click "Always Allow" instead of "Allow"
+2. Check Keychain Access app for any denied entries
+3. Reset keychain permissions:
+   ```bash
+   security unlock-keychain ~/Library/Keychains/login.keychain
+   ```
+
+### Linux Keyring Not Available
+
+**Problem:** "keyring backend not available" on Linux.
+
+**Solution:**
+1. Install required packages:
+   ```bash
+   # Debian/Ubuntu
+   sudo apt-get install gnome-keyring libsecret-1-0
+   
+   # Fedora/RHEL
+   sudo dnf install gnome-keyring libsecret
+   ```
+2. Ensure D-Bus is running:
+   ```bash
+   echo $DBUS_SESSION_BUS_ADDRESS
+   ```
+3. Start keyring daemon:
+   ```bash
+   gnome-keyring-daemon --start --daemonize
+   ```
+
+### Automatic Migration Fails
+
+**Problem:** Token migration from file to keychain fails.
+
+**Solution:**
+1. Check current storage status:
+   ```bash
+   claude-gate auth storage status
+   ```
+2. Manually migrate:
+   ```bash
+   claude-gate auth storage migrate --from file --to keyring
+   ```
+3. Force file storage if keychain issues persist:
+   ```bash
+   export CLAUDE_GATE_AUTH_STORAGE_TYPE=file
+   ```
+
+### Tokens Lost After Update
+
+**Problem:** Authentication required after updating Claude Gate.
+
+**Solution:**
+1. Check for migrated file:
+   ```bash
+   ls ~/.claude-gate/auth.json.migrated
+   ```
+2. Restore from backup:
+   ```bash
+   cp ~/.claude-gate/backups/auth-*.json ~/.claude-gate/auth.json
+   ```
+3. Re-authenticate if necessary:
+   ```bash
+   claude-gate auth login
+   ```
+
+For more storage-related issues, see the [Token Storage Guide](./storage.md).
 
 ---
 

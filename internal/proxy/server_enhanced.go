@@ -16,7 +16,7 @@ type EnhancedProxyServer struct {
 }
 
 // NewEnhancedProxyServer creates a proxy server with dashboard
-func NewEnhancedProxyServer(config *ProxyConfig, address string, storage *auth.TokenStorage) *EnhancedProxyServer {
+func NewEnhancedProxyServer(config *ProxyConfig, address string, storage auth.StorageBackend) *EnhancedProxyServer {
 	// Create base proxy server components
 	handler := NewProxyHandler(config)
 	healthHandler := NewHealthHandler(storage)

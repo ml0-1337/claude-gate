@@ -46,9 +46,10 @@ type DashboardCmd struct {
 }
 
 type AuthCmd struct {
-	Login  LoginCmd  `cmd:"" help:"Authenticate with Claude Pro/Max using OAuth"`
-	Logout LogoutCmd `cmd:"" help:"Clear stored authentication credentials"`
-	Status StatusCmd `cmd:"" help:"Check authentication status"`
+	Login   LoginCmd         `cmd:"" help:"Authenticate with Claude Pro/Max using OAuth"`
+	Logout  LogoutCmd        `cmd:"" help:"Clear stored authentication credentials"`
+	Status  StatusCmd        `cmd:"" help:"Check authentication status"`
+	Storage AuthStorageCmd   `cmd:"" help:"Manage token storage backends"`
 }
 
 type LoginCmd struct{}
@@ -106,8 +107,18 @@ func (s *StartCmd) Run() error {
 	
 	out.Info("\nPress CTRL+C to stop the server")
 	
-	// Create proxy server
-	storage := auth.NewTokenStorage(cfg.AuthStoragePath)
+	// Create proxy server with storage
+	factory := auth.NewStorageFactory(auth.StorageFactoryConfig{
+		Type:        auth.StorageType(cfg.AuthStorageType),
+		FilePath:    cfg.AuthStoragePath,
+		ServiceName: cfg.KeyringService,
+	})
+	
+	storage, err := factory.CreateWithMigration()
+	if err != nil {
+		return fmt.Errorf("failed to create storage: %w", err)
+	}
+	
 	tokenProvider := auth.NewOAuthTokenProvider(storage)
 	transformer := proxy.NewRequestTransformer()
 	
@@ -153,7 +164,18 @@ func (d *DashboardCmd) Run() error {
 	
 	// Check authentication unless skipped
 	if !d.SkipAuthCheck {
-		storage := auth.NewTokenStorage(cfg.AuthStoragePath)
+		// Create storage using factory
+		factory := auth.NewStorageFactory(auth.StorageFactoryConfig{
+			Type:        auth.StorageType(cfg.AuthStorageType),
+			FilePath:    cfg.AuthStoragePath,
+			ServiceName: cfg.KeyringService,
+		})
+		
+		storage, err := factory.Create()
+		if err != nil {
+			return fmt.Errorf("failed to create storage: %w", err)
+		}
+		
 		token, err := storage.Get("anthropic")
 		if err != nil || token == nil || token.Type != "oauth" {
 			out.Error("No OAuth authentication found!")
@@ -162,8 +184,18 @@ func (d *DashboardCmd) Run() error {
 		}
 	}
 	
-	// Create proxy server
-	storage := auth.NewTokenStorage(cfg.AuthStoragePath)
+	// Create proxy server with storage
+	factory := auth.NewStorageFactory(auth.StorageFactoryConfig{
+		Type:        auth.StorageType(cfg.AuthStorageType),
+		FilePath:    cfg.AuthStoragePath,
+		ServiceName: cfg.KeyringService,
+	})
+	
+	storage, err := factory.CreateWithMigration()
+	if err != nil {
+		return fmt.Errorf("failed to create storage: %w", err)
+	}
+	
 	tokenProvider := auth.NewOAuthTokenProvider(storage)
 	transformer := proxy.NewRequestTransformer()
 	
@@ -226,7 +258,20 @@ func (d *DashboardCmd) Run() error {
 
 func (l *LoginCmd) Run() error {
 	cfg := config.DefaultConfig()
-	storage := auth.NewTokenStorage(cfg.AuthStoragePath)
+	cfg.LoadFromEnv()
+	
+	// Create storage using factory
+	factory := auth.NewStorageFactory(auth.StorageFactoryConfig{
+		Type:        auth.StorageType(cfg.AuthStorageType),
+		FilePath:    cfg.AuthStoragePath,
+		ServiceName: cfg.KeyringService,
+	})
+	
+	storage, err := factory.Create()
+	if err != nil {
+		return fmt.Errorf("failed to create storage: %w", err)
+	}
+	
 	client := auth.NewOAuthClient()
 	out := ui.NewOutput()
 	
@@ -255,7 +300,7 @@ func (l *LoginCmd) Run() error {
 	}()
 	
 	// Show spinner while generating
-	err := components.RunSpinner("Generating authorization URL...", func() error {
+	err = components.RunSpinner("Generating authorization URL...", func() error {
 		// Wait for URL generation
 		for authData == nil && authErr == nil {
 			time.Sleep(100 * time.Millisecond)
@@ -297,14 +342,27 @@ func (l *LoginCmd) Run() error {
 
 func (l *LogoutCmd) Run() error {
 	cfg := config.DefaultConfig()
-	storage := auth.NewTokenStorage(cfg.AuthStoragePath)
+	cfg.LoadFromEnv()
+	
+	// Create storage using factory
+	factory := auth.NewStorageFactory(auth.StorageFactoryConfig{
+		Type:        auth.StorageType(cfg.AuthStorageType),
+		FilePath:    cfg.AuthStoragePath,
+		ServiceName: cfg.KeyringService,
+	})
+	
+	storage, err := factory.Create()
+	if err != nil {
+		return fmt.Errorf("failed to create storage: %w", err)
+	}
+	
 	out := ui.NewOutput()
 	
 	if !components.Confirm("Are you sure you want to logout?") {
 		return nil
 	}
 	
-	err := components.RunSpinner("Removing authentication...", func() error {
+	err = components.RunSpinner("Removing authentication...", func() error {
 		return storage.Remove("anthropic")
 	})
 	if err != nil {
@@ -317,7 +375,20 @@ func (l *LogoutCmd) Run() error {
 
 func (s *StatusCmd) Run() error {
 	cfg := config.DefaultConfig()
-	storage := auth.NewTokenStorage(cfg.AuthStoragePath)
+	cfg.LoadFromEnv()
+	
+	// Create storage using factory
+	factory := auth.NewStorageFactory(auth.StorageFactoryConfig{
+		Type:        auth.StorageType(cfg.AuthStorageType),
+		FilePath:    cfg.AuthStoragePath,
+		ServiceName: cfg.KeyringService,
+	})
+	
+	storage, err := factory.Create()
+	if err != nil {
+		return fmt.Errorf("failed to create storage: %w", err)
+	}
+	
 	out := ui.NewOutput()
 	
 	out.Title("Claude Gate Status")
