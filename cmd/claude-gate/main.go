@@ -16,7 +16,6 @@ import (
 	"github.com/yourusername/claude-gate/internal/proxy"
 	"github.com/yourusername/claude-gate/internal/ui"
 	"github.com/yourusername/claude-gate/internal/ui/components"
-	"github.com/yourusername/claude-gate/internal/ui/styles"
 )
 
 var version = "0.1.0"
@@ -153,27 +152,32 @@ func (l *LoginCmd) Run() error {
 		}
 	}
 	
-	out.Title("🔐 Claude Pro/Max OAuth Authentication")
-	
 	// Get authorization URL
 	var authData *auth.AuthData
+	var authErr error
+	
+	// Generate URL in background
+	go func() {
+		authData, authErr = client.GetAuthorizationURL()
+	}()
+	
+	// Show spinner while generating
 	err := components.RunSpinner("Generating authorization URL...", func() error {
-		var err error
-		authData, err = client.GetAuthorizationURL()
-		return err
+		// Wait for URL generation
+		for authData == nil && authErr == nil {
+			time.Sleep(100 * time.Millisecond)
+		}
+		return authErr
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate authorization URL: %w", err)
 	}
 	
-	out.Subtitle("Please visit this URL to authorize:")
-	out.Box(authData.URL)
-	out.Info("After authorizing, you'll receive an authorization code.")
-	
-	// Get authorization code from user
-	fmt.Print(styles.InfoStyle.Render("Enter the authorization code: "))
-	var code string
-	fmt.Scanln(&code)
+	// Run interactive OAuth flow
+	code, err := ui.RunOAuthFlow(authData.URL)
+	if err != nil {
+		return fmt.Errorf("authentication canceled: %w", err)
+	}
 	code = strings.TrimSpace(code)
 	
 	// Exchange code for tokens
