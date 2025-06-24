@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	
+	"github.com/yourusername/claude-gate/internal/auth"
 )
 
 // TokenProvider interface for OAuth token management
@@ -179,15 +181,17 @@ type ProxyServer struct {
 	server  *http.Server
 }
 
-// NewProxyServer creates a new proxy server
-func NewProxyServer(config *ProxyConfig, addr string) *ProxyServer {
-	handler := NewProxyHandler(config)
+// NewProxyServer creates a new proxy server with health endpoints
+func NewProxyServer(config *ProxyConfig, addr string, storage *auth.TokenStorage) *ProxyServer {
+	proxyHandler := NewProxyHandler(config)
+	healthHandler := NewHealthHandler(storage)
+	mux := CreateMux(proxyHandler, healthHandler)
 	
 	return &ProxyServer{
-		handler: handler,
+		handler: proxyHandler,
 		server: &http.Server{
 			Addr:         addr,
-			Handler:      handler,
+			Handler:      mux,
 			ReadTimeout:  30 * time.Second,
 			WriteTimeout: config.Timeout + 10*time.Second, // Slightly more than request timeout
 			IdleTimeout:  120 * time.Second,
