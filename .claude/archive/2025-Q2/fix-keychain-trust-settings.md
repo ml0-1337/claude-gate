@@ -1,8 +1,8 @@
 ---
 todo_id: fix-keychain-trust-settings
 started: 2025-06-24 23:51:40
-completed:
-status: in_progress
+completed: 2025-06-25 00:46:30
+status: completed
 priority: high
 ---
 
@@ -79,7 +79,7 @@ priority: high
 - [✓] Add reset-keychain command
 - [ ] Test manually on macOS (pending user verification)
 - [✓] Update documentation
-- [ ] Commit with tests and implementation
+- [✓] Commit with tests and implementation
 
 ## Working Scratchpad
 
