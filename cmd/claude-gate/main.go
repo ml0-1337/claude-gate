@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,6 +14,9 @@ import (
 	"github.com/yourusername/claude-gate/internal/auth"
 	"github.com/yourusername/claude-gate/internal/config"
 	"github.com/yourusername/claude-gate/internal/proxy"
+	"github.com/yourusername/claude-gate/internal/ui"
+	"github.com/yourusername/claude-gate/internal/ui/components"
+	"github.com/yourusername/claude-gate/internal/ui/styles"
 )
 
 var version = "0.1.0"
@@ -58,35 +60,42 @@ func (s *StartCmd) Run() error {
 	cfg.LogLevel = s.LogLevel
 	cfg.LoadFromEnv()
 	
+	out := ui.NewOutput()
+	
 	// Check authentication unless skipped
 	if !s.SkipAuthCheck {
 		storage := auth.NewTokenStorage(cfg.AuthStoragePath)
 		token, err := storage.Get("anthropic")
 		if err != nil || token == nil || token.Type != "oauth" {
-			fmt.Println("❌ No OAuth authentication found!")
-			fmt.Println("Please run 'claude-gate auth login' first to set up OAuth.")
+			out.Error("No OAuth authentication found!")
+			out.Info("Please run 'claude-gate auth login' first to set up OAuth.")
 			return fmt.Errorf("authentication required")
 		}
-		fmt.Println("✅ OAuth authentication configured and ready")
+		out.Success("OAuth authentication configured and ready")
 	}
 	
 	// Print startup banner
-	fmt.Printf("\n🚀 Claude OAuth Proxy\n")
-	fmt.Printf("Server URL:          http://%s\n", cfg.GetBindAddress())
-	fmt.Printf("Anthropic API:       %s\n", cfg.AnthropicBaseURL)
-	fmt.Printf("Proxy Auth:          %s\n", func() string {
-		if cfg.ProxyAuthToken != "" {
-			return "Enabled"
-		}
-		return "Disabled"
-	}())
-	fmt.Printf("OpenAI Compatible:   http://%s/v1\n\n", cfg.GetBindAddress())
+	out.Title("🚀 Claude OAuth Proxy")
+	
+	headers := []string{"Configuration", "Value"}
+	rows := [][]string{
+		{"Server URL", fmt.Sprintf("http://%s", cfg.GetBindAddress())},
+		{"Anthropic API", cfg.AnthropicBaseURL},
+		{"Proxy Auth", func() string {
+			if cfg.ProxyAuthToken != "" {
+				return "Enabled"
+			}
+			return "Disabled"
+		}()},
+		{"OpenAI Compatible", fmt.Sprintf("http://%s/v1", cfg.GetBindAddress())},
+	}
+	out.Table(headers, rows)
 	
 	if cfg.ProxyAuthToken == "" {
-		fmt.Println("⚠️  Proxy authentication disabled - anyone can use this proxy")
+		out.Warning("Proxy authentication disabled - anyone can use this proxy")
 	}
 	
-	fmt.Println("\nPress CTRL+C to stop the server")
+	out.Info("\nPress CTRL+C to stop the server")
 	
 	// Create proxy server
 	storage := auth.NewTokenStorage(cfg.AuthStoragePath)
@@ -108,9 +117,9 @@ func (s *StartCmd) Run() error {
 	
 	go func() {
 		<-sigChan
-		fmt.Println("\n\n✋ Shutting down proxy server...")
+		out.Info("\n\nShutting down proxy server...")
 		if err := server.Stop(30 * time.Second); err != nil {
-			log.Printf("Error during shutdown: %v", err)
+			out.Error("Error during shutdown: %v", err)
 		}
 	}()
 	
@@ -119,7 +128,7 @@ func (s *StartCmd) Run() error {
 		return fmt.Errorf("server error: %w", err)
 	}
 	
-	fmt.Println("✅ Proxy server stopped")
+	out.Success("Proxy server stopped")
 	return nil
 }
 
@@ -127,55 +136,64 @@ func (l *LoginCmd) Run() error {
 	cfg := config.DefaultConfig()
 	storage := auth.NewTokenStorage(cfg.AuthStoragePath)
 	client := auth.NewOAuthClient()
+	out := ui.NewOutput()
 	
 	// Check if already authenticated
 	existing, _ := storage.Get("anthropic")
 	if existing != nil && existing.Type == "oauth" {
-		fmt.Println("Already authenticated!")
-		fmt.Print("Do you want to re-authenticate? (y/N): ")
-		var response string
-		fmt.Scanln(&response)
-		if response != "y" && response != "Y" {
+		out.Warning("Already authenticated!")
+		if !components.Confirm("Do you want to re-authenticate?") {
 			return nil
 		}
-		storage.Remove("anthropic")
+		err := components.RunSpinner("Removing existing authentication...", func() error {
+			return storage.Remove("anthropic")
+		})
+		if err != nil {
+			return err
+		}
 	}
 	
-	fmt.Println("\n🔐 Starting Claude Pro/Max OAuth authentication...")
-	fmt.Println(strings.Repeat("-", 50))
+	out.Title("🔐 Claude Pro/Max OAuth Authentication")
 	
 	// Get authorization URL
-	authData, err := client.GetAuthorizationURL()
+	var authData *auth.AuthData
+	err := components.RunSpinner("Generating authorization URL...", func() error {
+		var err error
+		authData, err = client.GetAuthorizationURL()
+		return err
+	})
 	if err != nil {
 		return fmt.Errorf("failed to generate authorization URL: %w", err)
 	}
 	
-	fmt.Println("Please visit this URL to authorize:")
-	fmt.Printf("\n%s\n\n", authData.URL)
-	fmt.Println("After authorizing, you'll receive an authorization code.")
-	fmt.Println(strings.Repeat("-", 50))
+	out.Subtitle("Please visit this URL to authorize:")
+	out.Box(authData.URL)
+	out.Info("After authorizing, you'll receive an authorization code.")
 	
 	// Get authorization code from user
-	fmt.Print("Enter the authorization code: ")
+	fmt.Print(styles.InfoStyle.Render("Enter the authorization code: "))
 	var code string
 	fmt.Scanln(&code)
 	code = strings.TrimSpace(code)
 	
 	// Exchange code for tokens
-	fmt.Println("\nExchanging code for tokens...")
-	token, err := client.ExchangeCode(code, authData.Verifier)
+	var token *auth.TokenInfo
+	err = components.RunSpinner("Exchanging code for tokens...", func() error {
+		var err error
+		token, err = client.ExchangeCode(code, authData.Verifier)
+		if err != nil {
+			return err
+		}
+		// Save tokens
+		return storage.Set("anthropic", token)
+	})
 	if err != nil {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 	
-	// Save tokens
-	if err := storage.Set("anthropic", token); err != nil {
-		return fmt.Errorf("failed to save tokens: %w", err)
-	}
-	
-	fmt.Println("\n✅ Authentication successful!")
-	fmt.Println("Your Claude Pro/Max account is now connected.")
-	fmt.Println("Tokens are securely stored for future use.")
+	out.Success("\nAuthentication successful!")
+	out.Success("Your Claude Pro/Max account is now connected.")
+	out.Info("Tokens are securely stored for future use.")
 	
 	return nil
 }
@@ -183,100 +201,123 @@ func (l *LoginCmd) Run() error {
 func (l *LogoutCmd) Run() error {
 	cfg := config.DefaultConfig()
 	storage := auth.NewTokenStorage(cfg.AuthStoragePath)
+	out := ui.NewOutput()
 	
-	fmt.Print("Are you sure you want to logout? (y/N): ")
-	var response string
-	fmt.Scanln(&response)
-	
-	if response == "y" || response == "Y" {
-		if err := storage.Remove("anthropic"); err != nil {
-			return fmt.Errorf("failed to remove authentication: %w", err)
-		}
-		fmt.Println("✅ Logged out successfully")
+	if !components.Confirm("Are you sure you want to logout?") {
+		return nil
 	}
 	
+	err := components.RunSpinner("Removing authentication...", func() error {
+		return storage.Remove("anthropic")
+	})
+	if err != nil {
+		return fmt.Errorf("failed to remove authentication: %w", err)
+	}
+	
+	out.Success("Logged out successfully")
 	return nil
 }
 
 func (s *StatusCmd) Run() error {
 	cfg := config.DefaultConfig()
 	storage := auth.NewTokenStorage(cfg.AuthStoragePath)
+	out := ui.NewOutput()
 	
-	fmt.Println("\nClaude Auth Bridge Status")
+	out.Title("Claude Gate Status")
 	
 	// Check authentication
 	token, err := storage.Get("anthropic")
 	if err != nil || token == nil {
-		fmt.Println("❌ Authentication: Not configured")
-		fmt.Println("Run 'claude-gate auth login' to authenticate")
+		out.Error("Authentication: Not configured")
+		out.Info("Run 'claude-gate auth login' to authenticate")
 		return nil
 	}
 	
 	if token.Type == "oauth" {
-		fmt.Println("✅ OAuth Authentication: Configured")
+		out.Success("OAuth Authentication: Configured")
 		expires := time.Unix(token.ExpiresAt, 0)
-		fmt.Printf("   Token expires: %s\n", expires.Format("2006-01-02 15:04:05"))
 		if token.IsExpired() {
-			fmt.Println("   ⚠️  Token is expired and will be refreshed on next use")
+			out.Warning("Token is expired and will be refreshed on next use")
 		} else if token.NeedsRefresh() {
-			fmt.Println("   ⚠️  Token expires soon and will be refreshed on next use")
+			out.Warning("Token expires soon and will be refreshed on next use")
+		} else {
+			out.Info("Token expires: %s", expires.Format("2006-01-02 15:04:05"))
 		}
 	} else {
-		fmt.Println("⚠️  API Key Authentication: Configured")
-		fmt.Println("   Consider using OAuth for free usage")
+		out.Warning("API Key Authentication: Configured")
+		out.Info("Consider using OAuth for free usage")
 	}
 	
 	// Show proxy configuration
-	fmt.Println("\nProxy Configuration:")
-	fmt.Printf("  Default host: %s\n", cfg.Host)
-	fmt.Printf("  Default port: %d\n", cfg.Port)
-	fmt.Printf("  Auth required: %s\n", func() string {
-		if cfg.ProxyAuthToken != "" {
-			return "Yes"
-		}
-		return "No"
-	}())
-	fmt.Printf("  Log level: %s\n", cfg.LogLevel)
+	out.Subtitle("\nProxy Configuration")
+	headers := []string{"Setting", "Value"}
+	rows := [][]string{
+		{"Default host", cfg.Host},
+		{"Default port", fmt.Sprintf("%d", cfg.Port)},
+		{"Auth required", func() string {
+			if cfg.ProxyAuthToken != "" {
+				return "Yes"
+			}
+			return "No"
+		}()},
+		{"Log level", cfg.LogLevel},
+	}
+	out.Table(headers, rows)
 	
 	return nil
 }
 
 func (t *TestCmd) Run() error {
-	fmt.Printf("Testing proxy at %s...\n\n", t.BaseURL)
+	out := ui.NewOutput()
+	out.Title("Testing Claude Gate Proxy")
+	out.Info("Testing proxy at %s...", t.BaseURL)
 	
-	// Test root endpoint
-	resp, err := http.Get(t.BaseURL + "/health")
+	var resp *http.Response
+	err := components.RunSpinner("Connecting to proxy...", func() error {
+		var err error
+		resp, err = http.Get(t.BaseURL + "/health")
+		return err
+	})
 	if err != nil {
-		fmt.Printf("❌ Could not connect to proxy at %s\n", t.BaseURL)
-		fmt.Println("Is the proxy server running?")
+		out.Error("Could not connect to proxy at %s", t.BaseURL)
+		out.Info("Is the proxy server running?")
 		return err
 	}
 	defer resp.Body.Close()
 	
 	if resp.StatusCode == 200 {
-		fmt.Println("✅ Proxy server is running")
+		out.Success("Proxy server is running")
 		
 		// Parse response
 		var health map[string]interface{}
 		if err := json.NewDecoder(resp.Body).Decode(&health); err == nil {
+			headers := []string{"Status", "Value"}
+			rows := [][]string{}
+			
 			if status, ok := health["oauth_status"].(string); ok {
-				fmt.Printf("   OAuth status: %s\n", status)
+				rows = append(rows, []string{"OAuth status", status})
 			}
 			if proxyAuth, ok := health["proxy_auth"].(string); ok {
-				fmt.Printf("   Proxy auth: %s\n", proxyAuth)
+				rows = append(rows, []string{"Proxy auth", proxyAuth})
+			}
+			
+			if len(rows) > 0 {
+				out.Table(headers, rows)
 			}
 		}
 	} else {
-		fmt.Printf("❌ Unexpected status code: %d\n", resp.StatusCode)
+		out.Error("Unexpected status code: %d", resp.StatusCode)
 	}
 	
 	return nil
 }
 
 func (v *VersionCmd) Run() error {
-	fmt.Printf("claude-gate version %s\n", version)
-	fmt.Println("Go OAuth proxy for Anthropic API")
-	fmt.Println("https://github.com/yourusername/claude-gate")
+	out := ui.NewOutput()
+	out.Title("Claude Gate")
+	out.Info("Version: %s", version)
+	out.Info("Go OAuth proxy for Anthropic API")
+	out.Info("https://github.com/yourusername/claude-gate")
 	return nil
 }
 
