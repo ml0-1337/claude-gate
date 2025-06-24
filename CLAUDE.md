@@ -13,6 +13,31 @@ Claude Gate is a high-performance Go OAuth proxy for Anthropic's Claude API that
 - Cross-platform support (macOS, Linux, Windows)
 - Multiple distribution methods (NPM, Homebrew, direct binary)
 
+## Quick Navigation
+
+### Core Implementation Files
+- Main entry: `cmd/claude-gate/main.go`
+- OAuth client: `internal/auth/client.go`
+- Proxy handler: `internal/proxy/handler.go`
+- Dashboard: `internal/ui/dashboard/dashboard.go`
+
+### Configuration Files
+- Go module: `go.mod`
+- Build config: `.goreleaser.yml`
+- CI/CD: `.github/workflows/release.yml`
+- NPM package: `npm/package.json`
+
+### Test Files
+- Unit tests: `*_test.go` (alongside source)
+- Integration: `internal/test/integration/*_test.go`
+- E2E: `internal/test/e2e/*_test.go`
+- Test helpers: `internal/test/helpers/helpers.go`
+
+### Scripts
+- Version update: `scripts/update-version.sh`
+- NPM test: `scripts/test-npm-local.sh`
+- Add co-author: `.claude/scripts/add-claude-coauthor.sh`
+
 ## Common Commands
 
 ### Building
@@ -24,10 +49,13 @@ make install      # Install to ~/bin
 
 ### Testing
 ```bash
-make test         # Run Go tests with race detection
-make test-all     # Comprehensive test suite (unit, integration, edge cases)
-make npm-test     # Test NPM package locally
-go test -v ./...  # Quick test during development
+make test              # Run unit tests with coverage
+make test-unit         # Run unit tests only (short mode)
+make test-integration  # Run integration tests
+make test-e2e          # Run end-to-end tests
+make test-all          # Run all test types
+make npm-test          # Test NPM package locally
+go test -v ./...       # Quick test during development
 ```
 
 ### Running
@@ -80,6 +108,70 @@ The codebase follows clean architecture principles with clear separation of conc
 - Tokens stored securely (keychain integration planned)
 - Local-only proxy binding by default
 - Optional proxy authentication token for additional security
+
+## Project Structure
+
+```
+claude-gate/
+├── cmd/
+│   └── claude-gate/          # CLI application entry point
+│       ├── main.go          # Main entry point with Kong CLI setup
+│       └── auth_storage.go  # Storage-related CLI commands
+├── internal/                 # Private application code (Go convention)
+│   ├── auth/                # Authentication & token management
+│   │   ├── client.go        # OAuth client implementation
+│   │   ├── oauth.go         # OAuth flow logic
+│   │   ├── storage_*.go     # Various storage backends
+│   │   └── *_test.go        # Unit tests
+│   ├── config/              # Configuration management
+│   ├── proxy/               # Proxy server implementation
+│   │   ├── handler.go       # Main proxy handler
+│   │   ├── server.go        # Enhanced server with monitoring
+│   │   └── transformer.go   # Request/response transformation
+│   ├── test/                # Test infrastructure
+│   │   ├── integration/     # Integration tests (build tag: integration)
+│   │   ├── e2e/            # End-to-end tests (build tag: e2e)
+│   │   ├── helpers/        # Shared test utilities
+│   │   └── testdata/       # Test fixtures
+│   └── ui/                  # Terminal UI components
+│       ├── components/      # Reusable UI components
+│       ├── dashboard/       # Interactive dashboard
+│       ├── styles/         # Terminal styling (Lipgloss)
+│       └── utils/          # UI utilities
+├── docs/                    # Project documentation
+│   ├── architecture/       # Architecture decisions and diagrams
+│   ├── deployment/         # Deployment guides
+│   ├── getting-started/    # User guides
+│   └── testing/           # Testing documentation
+├── npm/                    # NPM package distribution
+│   ├── package.json       # Main NPM package
+│   ├── platforms/         # Platform-specific packages
+│   └── scripts/           # Installation scripts
+├── scripts/               # Build and utility scripts
+├── .github/              # GitHub Actions workflows
+│   └── workflows/        # CI/CD pipelines
+├── .claude/              # Claude-specific files
+│   ├── todos/           # Active todo files
+│   ├── archive/         # Completed todos
+│   └── scripts/         # Claude utility scripts
+├── Makefile             # Build automation
+├── go.mod              # Go module definition
+└── .goreleaser.yml     # GoReleaser configuration
+```
+
+### File Naming Conventions
+- Test files: `*_test.go` alongside source files
+- Integration tests: `*_integration_test.go` with build tags
+- E2E tests: `*_e2e_test.go` with build tags
+- Mock implementations: `mock_*.go`
+- Interfaces: Often in the same file as primary implementation
+
+### Key Files
+- Entry point: `cmd/claude-gate/main.go`
+- OAuth config: `internal/auth/oauth.go` (contains client ID)
+- Proxy handler: `internal/proxy/handler.go`
+- Dashboard UI: `internal/ui/dashboard/dashboard.go`
+- Storage factory: `internal/auth/storage_factory.go`
 
 ## Testing Strategy
 
