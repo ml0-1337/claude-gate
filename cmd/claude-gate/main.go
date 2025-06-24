@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/yourusername/claude-gate/internal/auth"
 	"github.com/yourusername/claude-gate/internal/config"
 	"github.com/yourusername/claude-gate/internal/proxy"
@@ -21,13 +22,22 @@ import (
 var version = "0.1.0"
 
 type CLI struct {
-	Start StartCmd `cmd:"" help:"Start the Claude OAuth proxy server"`
-	Auth  AuthCmd  `cmd:"" help:"Authentication management commands"`
-	Test  TestCmd  `cmd:"" help:"Test the proxy connection"`
-	Version VersionCmd `cmd:"" help:"Show version information"`
+	Start     StartCmd     `cmd:"" help:"Start the Claude OAuth proxy server"`
+	Dashboard DashboardCmd `cmd:"" help:"Start server with interactive dashboard"`
+	Auth      AuthCmd      `cmd:"" help:"Authentication management commands"`
+	Test      TestCmd      `cmd:"" help:"Test the proxy connection"`
+	Version   VersionCmd   `cmd:"" help:"Show version information"`
 }
 
 type StartCmd struct {
+	Host      string `help:"Host to bind the proxy server" default:"127.0.0.1"`
+	Port      int    `help:"Port to bind the proxy server" default:"8000"`
+	AuthToken string `help:"Enable proxy authentication with this token" env:"CLAUDE_GATE_PROXY_AUTH_TOKEN"`
+	LogLevel  string `help:"Logging level (DEBUG, INFO, WARNING, ERROR)" default:"INFO"`
+	SkipAuthCheck bool `help:"Skip OAuth authentication check"`
+}
+
+type DashboardCmd struct {
 	Host      string `help:"Host to bind the proxy server" default:"127.0.0.1"`
 	Port      int    `help:"Port to bind the proxy server" default:"8000"`
 	AuthToken string `help:"Enable proxy authentication with this token" env:"CLAUDE_GATE_PROXY_AUTH_TOKEN"`
@@ -128,6 +138,89 @@ func (s *StartCmd) Run() error {
 	}
 	
 	out.Success("Proxy server stopped")
+	return nil
+}
+
+func (d *DashboardCmd) Run() error {
+	cfg := config.DefaultConfig()
+	cfg.Host = d.Host
+	cfg.Port = d.Port
+	cfg.ProxyAuthToken = d.AuthToken
+	cfg.LogLevel = d.LogLevel
+	cfg.LoadFromEnv()
+	
+	out := ui.NewOutput()
+	
+	// Check authentication unless skipped
+	if !d.SkipAuthCheck {
+		storage := auth.NewTokenStorage(cfg.AuthStoragePath)
+		token, err := storage.Get("anthropic")
+		if err != nil || token == nil || token.Type != "oauth" {
+			out.Error("No OAuth authentication found!")
+			out.Info("Please run 'claude-gate auth login' first to set up OAuth.")
+			return fmt.Errorf("authentication required")
+		}
+	}
+	
+	// Create proxy server
+	storage := auth.NewTokenStorage(cfg.AuthStoragePath)
+	tokenProvider := auth.NewOAuthTokenProvider(storage)
+	transformer := proxy.NewRequestTransformer()
+	
+	proxyConfig := &proxy.ProxyConfig{
+		UpstreamURL:   cfg.AnthropicBaseURL,
+		TokenProvider: tokenProvider,
+		Transformer:   transformer,
+		Timeout:       cfg.RequestTimeout,
+	}
+	
+	server := proxy.NewEnhancedProxyServer(proxyConfig, cfg.GetBindAddress(), storage)
+	
+	// Get dashboard model
+	dashboardModel := server.GetDashboard()
+	
+	// Start server in background
+	serverErrChan := make(chan error, 1)
+	go func() {
+		if err := server.Start(); err != nil && err != http.ErrServerClosed {
+			serverErrChan <- err
+		}
+	}()
+	
+	// Give server a moment to start
+	time.Sleep(100 * time.Millisecond)
+	
+	// Check if server started successfully
+	select {
+	case err := <-serverErrChan:
+		return fmt.Errorf("failed to start server: %w", err)
+	default:
+		// Server started successfully
+	}
+	
+	// Run the dashboard UI
+	p := tea.NewProgram(dashboardModel, tea.WithAltScreen())
+	
+	// Handle shutdown
+	go func() {
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+		<-sigChan
+		p.Quit()
+	}()
+	
+	// Run the dashboard
+	if _, err := p.Run(); err != nil {
+		out.Error("Dashboard error: %v", err)
+	}
+	
+	// Shutdown server
+	out.Info("\nShutting down proxy server...")
+	if err := server.Stop(30 * time.Second); err != nil {
+		out.Error("Error during shutdown: %v", err)
+	}
+	
+	out.Success("Dashboard stopped")
 	return nil
 }
 
