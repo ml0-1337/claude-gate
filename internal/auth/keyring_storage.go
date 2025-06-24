@@ -13,10 +13,11 @@ import (
 
 // KeyringStorage implements StorageBackend using OS-native secure storage
 type KeyringStorage struct {
-	keyring keyring.Keyring
-	config  KeyringConfig
-	mu      sync.RWMutex
-	metrics StorageMetrics
+	keyring   keyring.Keyring
+	config    KeyringConfig
+	mu        sync.RWMutex
+	metricsMu sync.Mutex // Separate mutex for metrics to avoid lock contention
+	metrics   StorageMetrics
 }
 
 // KeyringConfig holds configuration for keyring storage
@@ -284,15 +285,21 @@ func containsIgnoreCase(s, substr string) bool {
 
 // Metrics tracking methods
 func (s *KeyringStorage) recordOperation(op string) {
+	s.metricsMu.Lock()
+	defer s.metricsMu.Unlock()
 	s.metrics.Operations[op]++
 	s.metrics.LastAccess = time.Now()
 }
 
 func (s *KeyringStorage) recordError(op string, err error) {
+	s.metricsMu.Lock()
+	defer s.metricsMu.Unlock()
 	s.metrics.Errors[op]++
 	s.metrics.LastError = err
 }
 
 func (s *KeyringStorage) recordLatency(op string, duration time.Duration) {
+	s.metricsMu.Lock()
+	defer s.metricsMu.Unlock()
 	s.metrics.Latencies[op] = duration
 }

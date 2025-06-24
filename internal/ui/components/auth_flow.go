@@ -139,7 +139,7 @@ func (m AuthFlowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			for i, step := range m.steps {
 				if step.Current {
 					m.steps[i].Failed = true
-					m.err = fmt.Errorf(msg.Message)
+					m.err = fmt.Errorf("%s", msg.Message)
 					break
 				}
 			}
