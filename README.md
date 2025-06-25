@@ -107,6 +107,47 @@ You can find your Zed settings at:
 
 This configuration redirects all Anthropic API calls from Zed to your local Claude Gate proxy, allowing you to use Claude in Zed for FREE with your Pro/Max subscription.
 
+### 6. Using with Cursor IDE
+
+Cursor requires a public HTTPS endpoint, so you'll need to create a tunnel to your local Claude Gate instance.
+
+#### Step 1: Start Claude Gate
+```bash
+claude-gate start
+```
+
+#### Step 2: Create a tunnel (choose one option)
+
+**Option A: Using Cloudflared**
+```bash
+cloudflared tunnel --url localhost:5789
+```
+
+**Option B: Using ngrok**
+```bash
+ngrok http 5789
+```
+
+Take note of the HTTPS URL provided (e.g., `https://xxxx.trycloudflare.com` or `https://xxxx.ngrok-free.app`)
+
+#### Step 3: Configure Cursor
+
+1. Open Cursor's settings and go to the "Models" section
+2. Enter any API key in the "OpenAI API Key" field (e.g., `sk-dummy`)
+3. Click the dropdown beneath the API key field labeled "Override OpenAI Base URL"
+4. Enter your tunnel URL with `/v1` suffix (e.g., `https://xxxx.trycloudflare.com/v1`)
+5. Click "Save" next to the URL field
+
+#### Step 4: Configure your models
+
+In Cursor, use the `anthropic/` prefix for Claude models:
+- `anthropic/claude-opus-4-20250514` (recommended - latest Claude 4 Opus)
+- `anthropic/claude-sonnet-4-20250514` (Claude 4 Sonnet)
+- `anthropic/claude-3-5-sonnet-20241022` (Claude 3.5 Sonnet)
+- `anthropic/claude-3-5-haiku-20241022` (Claude 3.5 Haiku)
+
+⚠️ **Important**: When clicking "Verify" in Cursor, make sure to disable any models in Cursor's model list that aren't Claude models. Cursor randomly selects a model to test, and verification will fail if it tries a non-Claude model.
+
 ## Documentation
 
 For detailed documentation, see the [docs](./docs) directory:
