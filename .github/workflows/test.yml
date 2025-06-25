@@ -58,9 +58,20 @@ jobs:
       - name: Validate package.json files
         run: |
           node -e "JSON.parse(require('fs').readFileSync('npm/package.json'))"
-          for pkg in darwin-x64 darwin-arm64 linux-x64 linux-arm64 win32-x64; do
-            node -e "JSON.parse(require('fs').readFileSync('npm/platforms/$pkg/package.json'))"
-          done
+          node -e "
+            const fs = require('fs');
+            const platforms = ['darwin-x64', 'darwin-arm64', 'linux-x64', 'linux-arm64', 'win32-x64'];
+            platforms.forEach(pkg => {
+              const path = 'npm/platforms/' + pkg + '/package.json';
+              try {
+                JSON.parse(fs.readFileSync(path, 'utf8'));
+                console.log('✓ Valid: ' + path);
+              } catch (e) {
+                console.error('✗ Invalid: ' + path);
+                process.exit(1);
+              }
+            });
+          "
       
       - name: Test platform detection
         run: |
@@ -85,7 +96,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v5
         with:
           install-only: true
-          version: latest
+          version: '~> v2'
       
       - name: Validate config
         run: goreleaser check
@@ -156,7 +167,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v5
         with:
           install-only: true
-          version: latest
+          version: '~> v2'
       
       - name: Run comprehensive tests
         run: ./scripts/test-all.sh

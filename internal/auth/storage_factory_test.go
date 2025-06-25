@@ -3,6 +3,7 @@ package auth
 import (
 	"runtime"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -13,23 +14,25 @@ import (
 func TestStorageFactory_Create(t *testing.T) {
 	// Test file storage creation
 	t.Run("file storage", func(t *testing.T) {
+		testPath := filepath.Join(os.TempDir(), "test-auth.json")
 		factory := NewStorageFactory(StorageFactoryConfig{
 			Type:     StorageTypeFile,
-			FilePath: "/tmp/test-auth.json",
+			FilePath: testPath,
 		})
 		
 		storage, err := factory.Create()
 		assert.NoError(t, err)
 		assert.NotNil(t, storage)
 		assert.IsType(t, &FileStorage{}, storage)
-		assert.Equal(t, "file:/tmp/test-auth.json", storage.Name())
+		assert.Equal(t, "file:"+testPath, storage.Name())
 	})
 	
 	// Test auto storage creation
 	t.Run("auto storage", func(t *testing.T) {
+		testPath := filepath.Join(os.TempDir(), "test-auth.json")
 		factory := NewStorageFactory(StorageFactoryConfig{
 			Type:     StorageTypeAuto,
-			FilePath: "/tmp/test-auth.json",
+			FilePath: testPath,
 		})
 		
 		storage, err := factory.Create()
@@ -56,7 +59,7 @@ func TestStorageFactory_Create(t *testing.T) {
 func TestStorageFactory_CreateWithMigration(t *testing.T) {
 	// Create temporary directory for test
 	tempDir := t.TempDir()
-	jsonPath := tempDir + "/auth.json"
+	jsonPath := filepath.Join(tempDir, "auth.json")
 	
 	// Create file storage with test data
 	fileStorage := NewFileStorage(jsonPath)
@@ -73,7 +76,7 @@ func TestStorageFactory_CreateWithMigration(t *testing.T) {
 	// Create factory that will migrate to file storage (simulating keyring)
 	factory := NewStorageFactory(StorageFactoryConfig{
 		Type:     StorageTypeFile,
-		FilePath: tempDir + "/auth-migrated.json",
+		FilePath: filepath.Join(tempDir, "auth-migrated.json"),
 	})
 	
 	// Create with migration
