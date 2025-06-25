@@ -160,6 +160,7 @@ From OpenAI documentation:
 - [x] Write failing tests for tool use conversion
 - [x] Implement tool use delta conversion
 - [x] Add debug logging for unhandled events
+- [x] Fix tool index and ID issues based on user testing
 - [ ] Test with Cursor using tool-heavy prompts
 - [ ] Document the streaming format differences
 
