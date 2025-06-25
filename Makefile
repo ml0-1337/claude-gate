@@ -44,7 +44,7 @@ snapshot:
 		echo "Error: goreleaser is not installed. Install with: brew install goreleaser"; \
 		exit 1; \
 	fi
-	goreleaser build --snapshot --clean
+	goreleaser release --snapshot --clean --skip=publish
 	@echo ""
 	@echo "Snapshot build complete! Binaries in ./dist/"
 

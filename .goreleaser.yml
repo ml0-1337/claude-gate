@@ -2,6 +2,8 @@
 # GoReleaser configuration for Claude Gate
 # This file configures automated builds for multiple platforms
 
+version: 2
+
 project_name: claude-gate
 
 # Build configuration
@@ -54,9 +56,10 @@ archives:
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     
     # Use tar.gz for Unix, zip for Windows
+    formats: ["tar.gz"]
     format_overrides:
       - goos: windows
-        format: zip
+        formats: ["zip"]
     
     # Files to include in the archive
     files:
@@ -73,7 +76,7 @@ checksum:
 
 # Snapshot configuration for testing
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 
 # Release configuration
 release:
@@ -132,22 +135,6 @@ changelog:
     - title: 'Other'
       order: 999
 
-# NPM publish configuration
-publishers:
-  - name: npm
-    ids:
-      - claude-gate-archive
-    
-    # NPM package configuration
-    cmd: |
-      npm version {{ .Version }} --no-git-tag-version
-      npm publish --access public
-    
-    dir: ./npm
-    
-    env:
-      - NPM_AUTH_TOKEN={{ .Env.NPM_AUTH_TOKEN }}
-
 # Announce configuration
 announce:
   skip: true
@@ -163,14 +150,6 @@ announce:
 #       - '${artifact}'
 #     artifacts: checksum
 
-# SBOM generation
-sboms:
-  - artifacts: archive
-
-# Completion scripts generation
-completions:
-  - shells:
-      - bash
-      - zsh
-      - fish
-      - powershell
+# SBOM generation (disabled - requires syft)
+# sboms:
+#   - artifacts: archive

@@ -52,7 +52,7 @@ client = anthropic.Anthropic(
 )
 
 response = client.messages.create(
-    model="claude-3-5-sonnet-20241022",
+    model="claude-opus-4-20250514",  # Latest Claude 4 Opus
     max_tokens=300,
     messages=[
         {"role": "user", "content": "Hello, Claude!"}
@@ -73,7 +73,7 @@ const client = new Anthropic({
 });
 
 const response = await client.messages.create({
-  model: 'claude-3-5-sonnet-20241022',
+  model: 'claude-opus-4-20250514',  // Latest Claude 4 Opus
   max_tokens: 300,
   messages: [
     { role: 'user', content: 'Hello, Claude!' }
@@ -83,6 +83,29 @@ const response = await client.messages.create({
 console.log(response.content[0].text);
 ```
 
+### OpenAI SDK Example (Compatibility Mode)
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="sk-dummy",  # Can be any string
+    base_url="http://localhost:5789/v1/"  # Note the /v1/ suffix
+)
+
+response = client.chat.completions.create(
+    model="claude-opus-4-20250514",  # Latest Claude 4 Opus
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Hello, Claude!"}
+    ]
+)
+
+print(response.choices[0].message.content)
+```
+
+**Note**: OpenAI SDK compatibility has some limitations. System messages are concatenated to the conversation start, and some OpenAI-specific parameters are ignored.
+
 ### cURL Example
 
 ```bash
@@ -91,7 +114,7 @@ curl -X POST http://localhost:5789/v1/messages \
   -H "X-API-Key: sk-dummy" \
   -H "anthropic-version: 2023-06-01" \
   -d '{
-    "model": "claude-3-5-sonnet-20241022",
+    "model": "claude-opus-4-20250514",
     "max_tokens": 300,
     "messages": [
       {"role": "user", "content": "Hello, Claude!"}

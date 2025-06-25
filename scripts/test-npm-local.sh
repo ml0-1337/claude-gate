@@ -36,38 +36,46 @@ mkdir -p "$TEST_DIR/node_modules/@claude-gate"
 # Extract and copy binaries to simulate platform packages
 echo "Preparing platform packages..."
 
+# Find the version from the archive names (e.g., 0.0.1-next)
+VERSION=$(ls dist/*.tar.gz 2>/dev/null | head -1 | sed -E 's/.*claude-gate_([^_]+)_.*/\1/' || echo "snapshot")
+
 # macOS Intel
-if [ -f "dist/claude-gate_snapshot_darwin_amd64.tar.gz" ]; then
+DARWIN_X64_ARCHIVE=$(ls dist/claude-gate_*_Darwin_x86_64.tar.gz 2>/dev/null | head -1)
+if [ -f "$DARWIN_X64_ARCHIVE" ]; then
     mkdir -p "$TEST_DIR/node_modules/@claude-gate/darwin-x64"
-    tar -xzf "dist/claude-gate_snapshot_darwin_amd64.tar.gz" -C "$TEST_DIR/node_modules/@claude-gate/darwin-x64" --strip-components=1
+    tar -xzf "$DARWIN_X64_ARCHIVE" -C "$TEST_DIR/node_modules/@claude-gate/darwin-x64" --strip-components=1
     mv "$TEST_DIR/node_modules/@claude-gate/darwin-x64/claude-gate" "$TEST_DIR/node_modules/@claude-gate/darwin-x64/bin" 2>/dev/null || true
 fi
 
 # macOS ARM
-if [ -f "dist/claude-gate_snapshot_darwin_arm64.tar.gz" ]; then
+DARWIN_ARM64_ARCHIVE=$(ls dist/claude-gate_*_Darwin_arm64.tar.gz 2>/dev/null | head -1)
+if [ -f "$DARWIN_ARM64_ARCHIVE" ]; then
     mkdir -p "$TEST_DIR/node_modules/@claude-gate/darwin-arm64"
-    tar -xzf "dist/claude-gate_snapshot_darwin_arm64.tar.gz" -C "$TEST_DIR/node_modules/@claude-gate/darwin-arm64" --strip-components=1
+    tar -xzf "$DARWIN_ARM64_ARCHIVE" -C "$TEST_DIR/node_modules/@claude-gate/darwin-arm64" --strip-components=1
     mv "$TEST_DIR/node_modules/@claude-gate/darwin-arm64/claude-gate" "$TEST_DIR/node_modules/@claude-gate/darwin-arm64/bin" 2>/dev/null || true
 fi
 
 # Linux x64
-if [ -f "dist/claude-gate_snapshot_linux_amd64.tar.gz" ]; then
+LINUX_X64_ARCHIVE=$(ls dist/claude-gate_*_Linux_x86_64.tar.gz 2>/dev/null | head -1)
+if [ -f "$LINUX_X64_ARCHIVE" ]; then
     mkdir -p "$TEST_DIR/node_modules/@claude-gate/linux-x64"
-    tar -xzf "dist/claude-gate_snapshot_linux_amd64.tar.gz" -C "$TEST_DIR/node_modules/@claude-gate/linux-x64" --strip-components=1
+    tar -xzf "$LINUX_X64_ARCHIVE" -C "$TEST_DIR/node_modules/@claude-gate/linux-x64" --strip-components=1
     mv "$TEST_DIR/node_modules/@claude-gate/linux-x64/claude-gate" "$TEST_DIR/node_modules/@claude-gate/linux-x64/bin" 2>/dev/null || true
 fi
 
 # Linux ARM64
-if [ -f "dist/claude-gate_snapshot_linux_arm64.tar.gz" ]; then
+LINUX_ARM64_ARCHIVE=$(ls dist/claude-gate_*_Linux_arm64.tar.gz 2>/dev/null | head -1)
+if [ -f "$LINUX_ARM64_ARCHIVE" ]; then
     mkdir -p "$TEST_DIR/node_modules/@claude-gate/linux-arm64"
-    tar -xzf "dist/claude-gate_snapshot_linux_arm64.tar.gz" -C "$TEST_DIR/node_modules/@claude-gate/linux-arm64" --strip-components=1
+    tar -xzf "$LINUX_ARM64_ARCHIVE" -C "$TEST_DIR/node_modules/@claude-gate/linux-arm64" --strip-components=1
     mv "$TEST_DIR/node_modules/@claude-gate/linux-arm64/claude-gate" "$TEST_DIR/node_modules/@claude-gate/linux-arm64/bin" 2>/dev/null || true
 fi
 
 # Windows
-if [ -f "dist/claude-gate_snapshot_windows_amd64.zip" ]; then
+WINDOWS_ARCHIVE=$(ls dist/claude-gate_*_Windows_x86_64.zip 2>/dev/null | head -1)
+if [ -f "$WINDOWS_ARCHIVE" ]; then
     mkdir -p "$TEST_DIR/node_modules/@claude-gate/win32-x64"
-    unzip -q "dist/claude-gate_snapshot_windows_amd64.zip" -d "$TEST_DIR/node_modules/@claude-gate/win32-x64"
+    unzip -q "$WINDOWS_ARCHIVE" -d "$TEST_DIR/node_modules/@claude-gate/win32-x64"
     mv "$TEST_DIR/node_modules/@claude-gate/win32-x64/claude-gate.exe" "$TEST_DIR/node_modules/@claude-gate/win32-x64/bin.exe" 2>/dev/null || true
 fi
 
