@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -26,18 +27,26 @@ type ProxyConfig struct {
 	TokenProvider TokenProvider
 	Transformer   *RequestTransformer
 	Timeout       time.Duration
+	Logger        *slog.Logger
 }
 
 // ProxyHandler handles HTTP requests and proxies them to Anthropic API
 type ProxyHandler struct {
 	config     *ProxyConfig
 	httpClient *http.Client
+	logger     *slog.Logger
 }
 
 // NewProxyHandler creates a new proxy handler
 func NewProxyHandler(config *ProxyConfig) *ProxyHandler {
 	if config.Timeout == 0 {
 		config.Timeout = 600 * time.Second // 10 minutes default
+	}
+	
+	// Use default logger if none provided
+	logger := config.Logger
+	if logger == nil {
+		logger = slog.Default()
 	}
 	
 	// Create HTTP client with custom transport for better streaming support
@@ -54,11 +63,20 @@ func NewProxyHandler(config *ProxyConfig) *ProxyHandler {
 			Transport: transport,
 			Timeout:   config.Timeout,
 		},
+		logger: logger,
 	}
 }
 
 // ServeHTTP implements http.Handler interface
 func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Log request details
+	h.logger.Info("incoming request",
+		"method", r.Method,
+		"path", r.URL.Path,
+		"remote_addr", r.RemoteAddr,
+		"user_agent", r.Header.Get("User-Agent"),
+	)
+	
 	// Handle CORS preflight requests
 	if r.Method == "OPTIONS" {
 		h.handleCORS(w, r)
@@ -71,9 +89,11 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Get OAuth token
 	token, err := h.config.TokenProvider.GetAccessToken()
 	if err != nil {
+		h.logger.Error("failed to get OAuth token", "error", err)
 		h.writeError(w, http.StatusUnauthorized, "OAuth token error", err.Error())
 		return
 	}
+	h.logger.Debug("OAuth token retrieved successfully")
 	
 	// Read request body
 	body, err := io.ReadAll(r.Body)
@@ -93,6 +113,7 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	h.logger.Debug("streaming detection", "is_streaming", isStreamingRequest, "body_length", len(body))
 	
 	// Transform request body if needed
 	path := r.URL.Path
@@ -135,12 +156,25 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	upstreamReq.Header = h.config.Transformer.InjectHeaders(r.Header, token)
 	
 	// Make upstream request
+	h.logger.Debug("sending request to upstream",
+		"url", upstreamReq.URL.String(),
+		"method", upstreamReq.Method,
+		"has_connection_header", upstreamReq.Header.Get("Connection") != "",
+	)
+	
 	resp, err := h.httpClient.Do(upstreamReq)
 	if err != nil {
+		h.logger.Error("upstream request failed", "error", err)
 		h.writeError(w, http.StatusBadGateway, "Upstream request failed", err.Error())
 		return
 	}
 	defer resp.Body.Close()
+	
+	h.logger.Debug("received upstream response",
+		"status", resp.StatusCode,
+		"content_type", resp.Header.Get("Content-Type"),
+		"transfer_encoding", resp.Header.Get("Transfer-Encoding"),
+	)
 	
 	// Check if this is a streaming response
 	isStreaming := strings.Contains(resp.Header.Get("Content-Type"), "text/event-stream") ||
@@ -155,6 +189,12 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	
+	h.logger.Info("response type determined",
+		"is_streaming", isStreaming,
+		"path", path,
+		"status", resp.StatusCode,
+	)
 	
 	// Handle response body
 	if isStreaming {
@@ -175,17 +215,11 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		
 		// For OpenAI endpoints, convert SSE format
 		if path == "/v1/chat/completions" {
-			// Log that we're converting for OpenAI
-			if h.config.Transformer != nil {
-				// Using a simple log for debugging
-				json.NewEncoder(io.Discard).Encode(map[string]string{
-					"debug": "Converting Anthropic SSE to OpenAI format for streaming",
-					"path":  path,
-				})
-			}
+			h.logger.Info("streaming OpenAI-compatible response", "path", path)
 			h.streamOpenAIResponse(w, resp, path)
 		} else {
 			// For SSE, we need to flush after each write
+			h.logger.Info("streaming native Anthropic response", "path", path)
 			h.streamResponse(w, resp)
 		}
 	} else {
@@ -249,25 +283,33 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *ProxyHandler) streamResponse(w http.ResponseWriter, resp *http.Response) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
+		h.logger.Warn("response writer does not support flushing, falling back to copy")
 		// Fallback to regular copy if flusher not available
 		io.Copy(w, resp.Body)
 		return
 	}
 	
+	h.logger.Debug("starting native SSE streaming")
+	
 	// Create a custom writer that flushes after each write
 	buf := make([]byte, 4096)
+	bytesStreamed := 0
 	for {
 		n, err := resp.Body.Read(buf)
 		if n > 0 {
 			if _, writeErr := w.Write(buf[:n]); writeErr != nil {
+				h.logger.Error("error writing to response", "error", writeErr)
 				return
 			}
 			flusher.Flush()
+			bytesStreamed += n
+			h.logger.Debug("streamed chunk", "bytes", n, "total_bytes", bytesStreamed)
 		}
 		if err != nil {
 			if err != io.EOF {
-				// Log error but don't write it to response
-				// as we're already in the middle of streaming
+				h.logger.Error("error reading from upstream", "error", err)
+			} else {
+				h.logger.Debug("streaming completed", "total_bytes", bytesStreamed)
 			}
 			return
 		}
@@ -278,24 +320,35 @@ func (h *ProxyHandler) streamResponse(w http.ResponseWriter, resp *http.Response
 func (h *ProxyHandler) streamOpenAIResponse(w http.ResponseWriter, resp *http.Response, path string) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
+		h.logger.Warn("response writer does not support flushing for OpenAI streaming")
 		// Fallback to regular streaming if flusher not available
 		h.streamResponse(w, resp)
 		return
 	}
+	
+	h.logger.Debug("starting OpenAI SSE conversion")
 	
 	// Generate message ID and timestamp for consistency
 	messageID := "chatcmpl-" + generateRandomID()
 	created := time.Now().Unix()
 	model := "claude-3-5-sonnet-20241022" // Default model
 	
+	h.logger.Debug("OpenAI SSE session",
+		"message_id", messageID,
+		"created", created,
+		"default_model", model,
+	)
+	
 	scanner := bufio.NewScanner(resp.Body)
 	var currentEvent string
+	eventCount := 0
 	
 	for scanner.Scan() {
 		line := scanner.Text()
 		
 		if strings.HasPrefix(line, "event: ") {
 			currentEvent = strings.TrimPrefix(line, "event: ")
+			h.logger.Debug("SSE event received", "event", currentEvent)
 		} else if strings.HasPrefix(line, "data: ") {
 			data := strings.TrimPrefix(line, "data: ")
 			
@@ -306,6 +359,7 @@ func (h *ProxyHandler) streamOpenAIResponse(w http.ResponseWriter, resp *http.Re
 					if msg, ok := msgData["message"].(map[string]interface{}); ok {
 						if m, ok := msg["model"].(string); ok {
 							model = m
+							h.logger.Debug("extracted model from message_start", "model", model)
 						}
 					}
 				}
@@ -314,22 +368,43 @@ func (h *ProxyHandler) streamOpenAIResponse(w http.ResponseWriter, resp *http.Re
 			// Convert the SSE event
 			converted, err := ConvertAnthropicSSEToOpenAI(currentEvent, data, messageID, model, created)
 			if err == nil && converted != "" {
-				w.Write([]byte(converted))
+				eventCount++
+				h.logger.Debug("converted SSE event",
+					"event_type", currentEvent,
+					"event_count", eventCount,
+					"output_length", len(converted),
+				)
+				
+				n, writeErr := w.Write([]byte(converted))
+				if writeErr != nil {
+					h.logger.Error("failed to write converted event", "error", writeErr)
+					return
+				}
 				flusher.Flush()
+				h.logger.Debug("flushed SSE event", "bytes_written", n)
+			} else if err != nil {
+				h.logger.Error("failed to convert SSE event", "event", currentEvent, "error", err)
 			}
 		}
 	}
 	
 	// Check for scanner errors
 	if err := scanner.Err(); err != nil {
-		// Log error but don't write to response as we're already streaming
+		h.logger.Error("scanner error during SSE streaming", "error", err)
 		// The connection might have been closed by the client
 		return
 	}
 	
+	h.logger.Info("SSE streaming completed, sending [DONE] marker", "total_events", eventCount)
+	
 	// Send the [DONE] marker to properly close the OpenAI SSE stream
-	w.Write([]byte("data: [DONE]\n\n"))
+	n, err := w.Write([]byte("data: [DONE]\n\n"))
+	if err != nil {
+		h.logger.Error("failed to write [DONE] marker", "error", err)
+		return
+	}
 	flusher.Flush()
+	h.logger.Debug("sent [DONE] marker", "bytes_written", n)
 }
 
 // generateRandomID generates a random ID for OpenAI format

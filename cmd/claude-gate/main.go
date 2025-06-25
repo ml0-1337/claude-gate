@@ -14,6 +14,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ml0-1337/claude-gate/internal/auth"
 	"github.com/ml0-1337/claude-gate/internal/config"
+	"github.com/ml0-1337/claude-gate/internal/logger"
 	"github.com/ml0-1337/claude-gate/internal/proxy"
 	"github.com/ml0-1337/claude-gate/internal/ui"
 	"github.com/ml0-1337/claude-gate/internal/ui/components"
@@ -137,11 +138,15 @@ func (s *StartCmd) Run() error {
 	tokenProvider := auth.NewOAuthTokenProvider(storage)
 	transformer := proxy.NewRequestTransformer()
 	
+	// Create logger
+	log := logger.New(logger.ParseLevel(cfg.LogLevel))
+	
 	proxyConfig := &proxy.ProxyConfig{
 		UpstreamURL:   cfg.AnthropicBaseURL,
 		TokenProvider: tokenProvider,
 		Transformer:   transformer,
 		Timeout:       cfg.RequestTimeout,
+		Logger:        log,
 	}
 	
 	server := proxy.NewProxyServer(proxyConfig, cfg.GetBindAddress(), storage)
@@ -206,11 +211,15 @@ func (d *DashboardCmd) Run() error {
 	tokenProvider := auth.NewOAuthTokenProvider(storage)
 	transformer := proxy.NewRequestTransformer()
 	
+	// Create logger
+	log := logger.New(logger.ParseLevel(cfg.LogLevel))
+	
 	proxyConfig := &proxy.ProxyConfig{
 		UpstreamURL:   cfg.AnthropicBaseURL,
 		TokenProvider: tokenProvider,
 		Transformer:   transformer,
 		Timeout:       cfg.RequestTimeout,
+		Logger:        log,
 	}
 	
 	server := proxy.NewEnhancedProxyServer(proxyConfig, cfg.GetBindAddress(), storage)
