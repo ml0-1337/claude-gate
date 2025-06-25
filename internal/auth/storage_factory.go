@@ -158,9 +158,9 @@ func isKeyringAvailable() bool {
 		// Check for Secret Service or KWallet
 		// This is a simplified check - in reality we'd check D-Bus
 		return os.Getenv("DISPLAY") != "" || os.Getenv("WAYLAND_DISPLAY") != ""
-	case "windows":
-		// Windows always has Credential Manager
-		return true
+	// case "windows":
+	// 	// Windows always has Credential Manager
+	// 	return true
 	default:
 		return false
 	}

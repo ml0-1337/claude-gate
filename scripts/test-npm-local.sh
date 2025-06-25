@@ -71,13 +71,13 @@ if [ -f "$LINUX_ARM64_ARCHIVE" ]; then
     mv "$TEST_DIR/node_modules/@claude-gate/linux-arm64/claude-gate" "$TEST_DIR/node_modules/@claude-gate/linux-arm64/bin" 2>/dev/null || true
 fi
 
-# Windows
-WINDOWS_ARCHIVE=$(ls dist/claude-gate_*_Windows_x86_64.zip 2>/dev/null | head -1)
-if [ -f "$WINDOWS_ARCHIVE" ]; then
-    mkdir -p "$TEST_DIR/node_modules/@claude-gate/win32-x64"
-    unzip -q "$WINDOWS_ARCHIVE" -d "$TEST_DIR/node_modules/@claude-gate/win32-x64"
-    mv "$TEST_DIR/node_modules/@claude-gate/win32-x64/claude-gate.exe" "$TEST_DIR/node_modules/@claude-gate/win32-x64/bin.exe" 2>/dev/null || true
-fi
+# # Windows - commented out as Windows is not supported
+# WINDOWS_ARCHIVE=$(ls dist/claude-gate_*_Windows_x86_64.zip 2>/dev/null | head -1)
+# if [ -f "$WINDOWS_ARCHIVE" ]; then
+#     mkdir -p "$TEST_DIR/node_modules/@claude-gate/win32-x64"
+#     unzip -q "$WINDOWS_ARCHIVE" -d "$TEST_DIR/node_modules/@claude-gate/win32-x64"
+#     mv "$TEST_DIR/node_modules/@claude-gate/win32-x64/claude-gate.exe" "$TEST_DIR/node_modules/@claude-gate/win32-x64/bin.exe" 2>/dev/null || true
+# fi
 
 # Run install script
 echo ""

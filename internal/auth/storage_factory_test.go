@@ -104,8 +104,8 @@ func TestIsKeyringAvailable(t *testing.T) {
 	available := isKeyringAvailable()
 	
 	switch runtime.GOOS {
-	case "darwin", "windows":
-		// Should always be available on macOS and Windows
+	case "darwin":
+		// Should always be available on macOS
 		assert.True(t, available)
 	case "linux":
 		// Depends on display environment

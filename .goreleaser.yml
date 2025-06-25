@@ -16,16 +16,10 @@ builds:
     goos:
       - darwin
       - linux
-      - windows
     
     goarch:
       - amd64
       - arm64
-    
-    # Skip certain combinations that don't make sense
-    ignore:
-      - goos: windows
-        goarch: arm64
     
     # Optimize binary size and embed version info
     ldflags:

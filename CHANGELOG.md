@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 - OAuth/PKCE authentication with Claude Pro/Max accounts
 - HTTP proxy server for Anthropic API
-- Cross-platform support (macOS, Linux, Windows)
+- Cross-platform support (macOS, Linux)
 - NPM package distribution
 - Basic CLI commands (auth, start, stop, status)
 - Environment variable configuration

@@ -32,12 +32,6 @@ sudo apt install golang nodejs npm git make
 sudo dnf install golang nodejs npm git make
 ```
 
-### Windows Setup
-
-1. Install [Go](https://golang.org/dl/) from the official website
-2. Install [Node.js](https://nodejs.org/) from the official website
-3. Install [Git for Windows](https://git-scm.com/download/win)
-4. Install [Make for Windows](http://gnuwin32.sourceforge.net/packages/make.htm)
 
 ## Setting Up the Development Environment
 

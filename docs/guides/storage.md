@@ -7,7 +7,6 @@ Claude Gate now supports secure platform-native token storage using your operati
 By default, Claude Gate automatically selects the most secure storage backend available on your system:
 
 - **macOS**: Keychain Services
-- **Windows**: Credential Manager  
 - **Linux**: Secret Service API (GNOME Keyring, KWallet)
 - **Fallback**: Encrypted file storage when OS keychain is unavailable
 
@@ -17,7 +16,7 @@ By default, Claude Gate automatically selects the most secure storage backend av
 Your tokens are stored in the operating system's secure credential storage:
 - Hardware-backed security when available
 - Encrypted at rest by the OS
-- Integrated with system security (Touch ID, Windows Hello, etc.)
+- Integrated with system security (Touch ID, etc.)
 - Survives application updates
 
 ### File Storage (Fallback)
@@ -84,8 +83,6 @@ echo $GNOME_KEYRING_CONTROL
 echo $SSH_AUTH_SOCK
 ```
 
-**Windows**: Credential Manager should work automatically. Check Windows Credential Manager in Control Panel if issues arise.
-
 ### Fallback Behavior
 
 If keychain access fails, Claude Gate automatically falls back to file storage with a warning. To force a specific backend:
@@ -133,11 +130,6 @@ chmod 700 ~/.claude-gate
 - Tokens stored in login keychain by default
 - Synced across devices if iCloud Keychain enabled
 - May prompt for password after system updates
-
-### Windows
-- Stored in Windows Credential Manager
-- Accessible via Control Panel → Credential Manager
-- Persists across Windows updates
 
 ### Linux
 - Requires D-Bus and keyring daemon

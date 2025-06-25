@@ -12,7 +12,7 @@ Claude Gate is a Go rewrite of claude-auth-bridge that maintains the critical OA
 - ✅ **System Prompt Injection** - Automatic Claude Code identification (the secret sauce!)
 - ✅ **Model Alias Mapping** - Seamless handling of `latest` model aliases
 - ✅ **SSE Streaming Support** - Full support for streaming responses
-- ✅ **Cross-Platform** - Works on macOS, Linux, and Windows
+- ✅ **Cross-Platform** - Works on macOS and Linux
 - ✅ **Interactive Dashboard** - Real-time monitoring of requests and usage
 - ✅ **High Performance** - <50MB memory usage, <5ms request overhead
 
@@ -104,7 +104,6 @@ Configure Zed to use Claude Gate by adding this to your `settings.json`:
 You can find your Zed settings at:
 - macOS: `~/.config/zed/settings.json`
 - Linux: `~/.config/zed/settings.json`
-- Windows: `%APPDATA%\Zed\settings.json`
 
 This configuration redirects all Anthropic API calls from Zed to your local Claude Gate proxy, allowing you to use Claude in Zed for FREE with your Pro/Max subscription.
 

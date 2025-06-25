@@ -34,8 +34,7 @@
   },
   "os": [
     "darwin",
-    "linux",
-    "win32"
+    "linux"
   ],
   "cpu": [
     "x64",
@@ -45,8 +44,7 @@
     "@claude-gate/darwin-x64": "0.1.0",
     "@claude-gate/darwin-arm64": "0.1.0",
     "@claude-gate/linux-x64": "0.1.0",
-    "@claude-gate/linux-arm64": "0.1.0",
-    "@claude-gate/win32-x64": "0.1.0"
+    "@claude-gate/linux-arm64": "0.1.0"
   },
   "publishConfig": {
     "access": "public",

@@ -83,7 +83,7 @@ jobs:
       - name: Prepare NPM packages
         run: |
           # Create NPM package directories
-          mkdir -p npm-packages/{main,darwin-x64,darwin-arm64,linux-x64,linux-arm64,win32-x64}
+          mkdir -p npm-packages/{main,darwin-x64,darwin-arm64,linux-x64,linux-arm64}
           
           # Extract version
           VERSION="${{ steps.validate_tag.outputs.version }}"
@@ -104,10 +104,6 @@ jobs:
           # Linux ARM64
           tar -xzf dist/claude-gate_${VERSION}_Linux_arm64.tar.gz -C npm-packages/linux-arm64
           mv npm-packages/linux-arm64/claude-gate npm-packages/linux-arm64/bin
-          
-          # Windows x64
-          unzip -q dist/claude-gate_${VERSION}_Windows_x86_64.zip -d npm-packages/win32-x64
-          mv npm-packages/win32-x64/claude-gate.exe npm-packages/win32-x64/bin.exe
           
           # Copy NPM package files
           cp -r npm/* npm-packages/main/
@@ -163,7 +159,6 @@ jobs:
           ### 🔧 Supported Platforms
           - macOS (Intel & Apple Silicon)
           - Linux (x64 & ARM64)
-          - Windows (x64)
           
           ### 📝 Changelog
           See the full changelog below for details on what's new in this release.

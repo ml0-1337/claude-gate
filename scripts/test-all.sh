@@ -144,7 +144,7 @@ test_goreleaser_build() {
             "dist/claude-gate_darwin_arm64/claude-gate"
             "dist/claude-gate_linux_amd64_v1/claude-gate"
             "dist/claude-gate_linux_arm64/claude-gate"
-            "dist/claude-gate_windows_amd64_v1/claude-gate.exe"
+            # "dist/claude-gate_windows_amd64_v1/claude-gate.exe"  # Windows not supported
         )
         
         for file in "${expected_files[@]}"; do

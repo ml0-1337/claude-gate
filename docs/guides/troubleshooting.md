@@ -93,7 +93,6 @@ node scripts/install.js
 2. Verify the port isn't already in use:
    ```bash
    lsof -i :5789  # macOS/Linux
-   netstat -an | findstr :5789  # Windows
    ```
 3. Try a different port:
    ```bash

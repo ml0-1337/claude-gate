@@ -33,7 +33,6 @@ client = anthropic.Anthropic(
 
 - macOS (Intel & Apple Silicon)
 - Linux (x64 & ARM64)
-- Windows (x64)
 
 ## Documentation
 

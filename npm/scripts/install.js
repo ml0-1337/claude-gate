@@ -18,8 +18,6 @@ function getPlatform() {
     'darwin-arm64': '@claude-gate/darwin-arm64',
     'linux-x64': '@claude-gate/linux-x64',
     'linux-arm64': '@claude-gate/linux-arm64',
-    'win32-x64': '@claude-gate/win32-x64',
-    'win32-ia32': '@claude-gate/win32-x64', // Use x64 for 32-bit Windows too
   };
   
   const platformKey = `${type}-${arch}`;

@@ -60,31 +60,16 @@ test('getPlatform maps darwin-arm64 correctly', () => {
   Object.defineProperty(process, 'arch', { value: originalArch, configurable: true });
 });
 
-test('getPlatform maps win32-x64 correctly', () => {
+test('getPlatform throws error for windows platform', () => {
   const originalPlatform = process.platform;
   const originalArch = process.arch;
   
   Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
   Object.defineProperty(process, 'arch', { value: 'x64', configurable: true });
   
-  const platform = getPlatform();
-  assert.strictEqual(platform.packageName, '@claude-gate/win32-x64');
-  assert.strictEqual(platform.isWindows, true);
-  
-  Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
-  Object.defineProperty(process, 'arch', { value: originalArch, configurable: true });
-});
-
-test('getPlatform maps win32-ia32 to x64 package', () => {
-  const originalPlatform = process.platform;
-  const originalArch = process.arch;
-  
-  Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
-  Object.defineProperty(process, 'arch', { value: 'ia32', configurable: true });
-  
-  const platform = getPlatform();
-  assert.strictEqual(platform.packageName, '@claude-gate/win32-x64');
-  assert.strictEqual(platform.isWindows, true);
+  assert.throws(() => {
+    getPlatform();
+  }, /Unsupported platform/);
   
   Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
   Object.defineProperty(process, 'arch', { value: originalArch, configurable: true });
@@ -118,7 +103,6 @@ test('getPlatform error message includes supported platforms', () => {
   } catch (error) {
     assert(error.message.includes('darwin-x64'), 'Error should list darwin-x64');
     assert(error.message.includes('linux-arm64'), 'Error should list linux-arm64');
-    assert(error.message.includes('win32-x64'), 'Error should list win32-x64');
   }
   
   Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
