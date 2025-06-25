@@ -247,4 +247,62 @@ func TestProxyHandler(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "invalid_request_error", response["error"].(map[string]interface{})["type"])
 	})
+	
+	t.Run("injects system prompt for requests without one", func(t *testing.T) {
+		// Create test server to verify system prompt injection
+		upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, err := io.ReadAll(r.Body)
+			require.NoError(t, err)
+			
+			var data map[string]interface{}
+			err = json.Unmarshal(body, &data)
+			require.NoError(t, err)
+			
+			// Verify system prompt was injected
+			system, ok := data["system"].(string)
+			require.True(t, ok)
+			assert.Equal(t, ClaudeCodePrompt, system)
+			
+			// Send response
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"id": "msg_456",
+				"content": []map[string]interface{}{
+					{"type": "text", "text": "Response without system prompt"},
+				},
+			})
+		}))
+		defer upstream.Close()
+		
+		// Create proxy handler
+		handler := NewProxyHandler(&ProxyConfig{
+			UpstreamURL:   upstream.URL,
+			TokenProvider: &mockTokenProvider{token: "test-token"},
+			Transformer:   NewRequestTransformer(),
+		})
+		
+		// Create test request WITHOUT system prompt
+		reqBody := map[string]interface{}{
+			"model": "claude-opus-4-20250514",
+			"messages": []map[string]interface{}{
+				{"role": "user", "content": "Hello, Claude!"},
+			},
+		}
+		bodyBytes, _ := json.Marshal(reqBody)
+		
+		req := httptest.NewRequest("POST", "/v1/messages", bytes.NewReader(bodyBytes))
+		req.Header.Set("Content-Type", "application/json")
+		
+		// Execute request
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		
+		// Verify response
+		assert.Equal(t, http.StatusOK, w.Code)
+		
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		assert.Equal(t, "msg_456", response["id"])
+	})
 }

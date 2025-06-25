@@ -144,8 +144,12 @@ func TestSystemPromptTransformation(t *testing.T) {
 		result, err := transformer.TransformSystemPrompt(body)
 		require.NoError(t, err)
 		
-		// Should remain unchanged
-		assert.Equal(t, body, result)
+		// Should inject Claude Code prompt
+		var data map[string]interface{}
+		err = json.Unmarshal(result, &data)
+		require.NoError(t, err)
+		
+		assert.Equal(t, claudeCodePrompt, data["system"])
 	})
 }
 

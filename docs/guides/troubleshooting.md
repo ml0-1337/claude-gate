@@ -164,6 +164,11 @@ claude-gate auth login   # Re-authenticate if needed
 - **Cause:** Invalid request format
 - **Fix:** Ensure you're using a compatible Anthropic SDK
 
+### "This credential is only authorized for use with Claude Code"
+- **Cause:** The proxy is not properly injecting the Claude Code system prompt
+- **Fix:** Update to version 0.2.1+ which fixes system prompt injection for requests without an existing system prompt
+- **Details:** This error typically occurs when using the Anthropic SDK without including a system prompt in your request. The latest version automatically injects the required Claude Code identification.
+
 ### "Upstream request failed"
 - **Cause:** Network issues or Anthropic API down
 - **Fix:** Check internet connection and Anthropic status

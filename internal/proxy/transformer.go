@@ -37,7 +37,9 @@ func (t *RequestTransformer) TransformSystemPrompt(body []byte) ([]byte, error) 
 	// Check if request has a system prompt
 	systemRaw, hasSystem := data["system"]
 	if !hasSystem {
-		return body, nil // No system prompt, return as-is
+		// No system prompt, inject Claude Code identification
+		data["system"] = ClaudeCodePrompt
+		return json.Marshal(data)
 	}
 	
 	switch system := systemRaw.(type) {

@@ -38,6 +38,7 @@ claude-gate start
 
 ### 4. Use with any SDK
 
+#### Using Anthropic SDK
 ```python
 import anthropic
 
@@ -47,11 +48,35 @@ client = anthropic.Anthropic(
 )
 
 response = client.messages.create(
-    model="claude-3-5-sonnet-20241022",
+    model="claude-opus-4-20250514",  # Latest Claude 4 Opus
     max_tokens=300,
     messages=[{"role": "user", "content": "Hello, Claude!"}]
 )
+
+print(response.content[0].text)
 ```
+
+#### Using OpenAI SDK (compatibility mode)
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="sk-dummy",  # Can be any string
+    base_url="http://localhost:5789/v1/"  # Note the /v1/ suffix
+)
+
+response = client.chat.completions.create(
+    model="claude-opus-4-20250514",  # Latest Claude 4 Opus
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Hello, Claude!"}
+    ]
+)
+
+print(response.choices[0].message.content)
+```
+
+**Note**: OpenAI SDK compatibility has some limitations. System messages are concatenated to the conversation start, and some OpenAI-specific parameters are ignored.
 
 ## Documentation
 
