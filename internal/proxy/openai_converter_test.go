@@ -437,4 +437,80 @@ func TestConvertAnthropicSSEToOpenAI(t *testing.T) {
 		require.NoError(t, err)
 		assert.Empty(t, result)
 	})
+	
+	t.Run("should convert input_json_delta events to OpenAI tool format", func(t *testing.T) {
+		// Arrange
+		event := "content_block_delta"
+		data := `{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"location\": \"San Fra"}}`
+		
+		// Act
+		result, err := ConvertAnthropicSSEToOpenAI(event, data, messageID, model, created)
+		
+		// Assert
+		require.NoError(t, err)
+		assert.Contains(t, result, "data: ")
+		assert.Contains(t, result, `"tool_calls"`)
+		assert.Contains(t, result, `"function"`)
+		assert.Contains(t, result, `"arguments":"{\"location\": \"San Fra"`)
+	})
+	
+	t.Run("should handle content_block_start for tool_use", func(t *testing.T) {
+		// Arrange
+		event := "content_block_start"
+		data := `{"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_123","name":"get_weather"}}`
+		
+		// Act
+		result, err := ConvertAnthropicSSEToOpenAI(event, data, messageID, model, created)
+		
+		// Assert
+		require.NoError(t, err)
+		assert.Contains(t, result, "data: ")
+		assert.Contains(t, result, `"tool_calls"`)
+		assert.Contains(t, result, `"id":"toolu_123"`)
+		assert.Contains(t, result, `"type":"function"`)
+		assert.Contains(t, result, `"name":"get_weather"`)
+	})
+	
+	t.Run("should handle empty tool input gracefully", func(t *testing.T) {
+		// Arrange
+		event := "content_block_delta"
+		data := `{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":""}}`
+		
+		// Act
+		result, err := ConvertAnthropicSSEToOpenAI(event, data, messageID, model, created)
+		
+		// Assert
+		require.NoError(t, err)
+		assert.Contains(t, result, "data: ")
+		assert.Contains(t, result, `"arguments":""`)
+	})
+	
+	t.Run("should handle multiple tool deltas in sequence", func(t *testing.T) {
+		// Arrange - simulating a sequence of tool use events
+		events := []struct {
+			event string
+			data  string
+		}{
+			{
+				event: "content_block_start",
+				data:  `{"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_456","name":"calculate"}}`,
+			},
+			{
+				event: "content_block_delta",
+				data:  `{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"operation\": \"add\","}}`,
+			},
+			{
+				event: "content_block_delta",
+				data:  `{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":" \"a\": 5, \"b\": 3}"}}`,
+			},
+		}
+		
+		// Act & Assert - each event should produce valid output
+		for _, tc := range events {
+			result, err := ConvertAnthropicSSEToOpenAI(tc.event, tc.data, messageID, model, created)
+			require.NoError(t, err)
+			assert.NotEmpty(t, result)
+			assert.Contains(t, result, "data: ")
+		}
+	})
 }

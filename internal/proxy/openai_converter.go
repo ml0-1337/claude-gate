@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"log/slog"
 	"strings"
 	"time"
 )
@@ -234,8 +235,16 @@ func convertAnthropicErrorToOpenAI(errorObj interface{}) ([]byte, error) {
 	return json.Marshal(openAIError)
 }
 
+// toolState tracks tool use information across SSE events
+var toolState = make(map[int]map[string]interface{})
+
 // ConvertAnthropicSSEToOpenAI converts a single Anthropic SSE event to OpenAI format
 func ConvertAnthropicSSEToOpenAI(event, data string, messageID string, model string, created int64) (string, error) {
+	return ConvertAnthropicSSEToOpenAIWithLogger(event, data, messageID, model, created, nil)
+}
+
+// ConvertAnthropicSSEToOpenAIWithLogger converts a single Anthropic SSE event to OpenAI format with optional logging
+func ConvertAnthropicSSEToOpenAIWithLogger(event, data string, messageID string, model string, created int64, logger *slog.Logger) (string, error) {
 	// Parse the data as JSON
 	var eventData map[string]interface{}
 	if err := json.Unmarshal([]byte(data), &eventData); err != nil {
@@ -265,6 +274,68 @@ func ConvertAnthropicSSEToOpenAI(event, data string, messageID string, model str
 		chunkJSON, _ := json.Marshal(chunk)
 		return "data: " + string(chunkJSON) + "\n\n", nil
 		
+	case "content_block_start":
+		// Check if this is a tool use block
+		if contentBlock, ok := eventData["content_block"].(map[string]interface{}); ok {
+			if contentBlock["type"] == "tool_use" {
+				// Extract tool information
+				index := int(eventData["index"].(float64))
+				toolID, _ := contentBlock["id"].(string)
+				toolName, _ := contentBlock["name"].(string)
+				
+				// Store tool info for this index
+				toolState[index] = map[string]interface{}{
+					"id":   toolID,
+					"name": toolName,
+				}
+				
+				// Send initial tool call chunk
+				chunk := map[string]interface{}{
+					"id":      messageID,
+					"object":  "chat.completion.chunk",
+					"created": created,
+					"model":   model,
+					"choices": []interface{}{
+						map[string]interface{}{
+							"index": 0,
+							"delta": map[string]interface{}{
+								"tool_calls": []interface{}{
+									map[string]interface{}{
+										"index": 0,
+										"id":    toolID,
+										"type":  "function",
+										"function": map[string]interface{}{
+											"name":      toolName,
+											"arguments": "",
+										},
+									},
+								},
+							},
+							"finish_reason": nil,
+						},
+					},
+				}
+				chunkJSON, _ := json.Marshal(chunk)
+				return "data: " + string(chunkJSON) + "\n\n", nil
+			}
+		}
+		// For non-tool blocks, return empty to skip
+		return "", nil
+		
+	case "content_block_stop":
+		// Clear tool state for the completed block if it was a tool block
+		if eventData["index"] != nil {
+			index := int(eventData["index"].(float64))
+			if _, exists := toolState[index]; exists {
+				delete(toolState, index)
+				if logger != nil {
+					logger.Debug("completed tool use block", "index", index)
+				}
+			}
+		}
+		// No output for content_block_stop
+		return "", nil
+		
 	case "content_block_delta":
 		// Convert content delta to OpenAI chunk
 		if delta, ok := eventData["delta"].(map[string]interface{}); ok {
@@ -280,6 +351,35 @@ func ConvertAnthropicSSEToOpenAI(event, data string, messageID string, model str
 								"index": 0,
 								"delta": map[string]interface{}{
 									"content": text,
+								},
+								"finish_reason": nil,
+							},
+						},
+					}
+					chunkJSON, _ := json.Marshal(chunk)
+					return "data: " + string(chunkJSON) + "\n\n", nil
+				}
+			} else if delta["type"] == "input_json_delta" {
+				// Handle tool use deltas
+				if partialJSON, ok := delta["partial_json"].(string); ok {
+					// Create tool delta chunk
+					chunk := map[string]interface{}{
+						"id":      messageID,
+						"object":  "chat.completion.chunk",
+						"created": created,
+						"model":   model,
+						"choices": []interface{}{
+							map[string]interface{}{
+								"index": 0,
+								"delta": map[string]interface{}{
+									"tool_calls": []interface{}{
+										map[string]interface{}{
+											"index": 0,
+											"function": map[string]interface{}{
+												"arguments": partialJSON,
+											},
+										},
+									},
 								},
 								"finish_reason": nil,
 							},
@@ -335,6 +435,16 @@ func ConvertAnthropicSSEToOpenAI(event, data string, messageID string, model str
 				chunkJSON, _ := json.Marshal(chunk)
 				return "data: " + string(chunkJSON) + "\n\n", nil
 			}
+		}
+		
+	default:
+		// Log unhandled event types for debugging
+		if logger != nil {
+			logger.Debug("unhandled SSE event type",
+				"event", event,
+				"type", eventType,
+				"data", data,
+			)
 		}
 	}
 	

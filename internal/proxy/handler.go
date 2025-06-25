@@ -366,7 +366,7 @@ func (h *ProxyHandler) streamOpenAIResponse(w http.ResponseWriter, resp *http.Re
 			}
 			
 			// Convert the SSE event
-			converted, err := ConvertAnthropicSSEToOpenAI(currentEvent, data, messageID, model, created)
+			converted, err := ConvertAnthropicSSEToOpenAIWithLogger(currentEvent, data, messageID, model, created, h.logger)
 			if err == nil && converted != "" {
 				eventCount++
 				h.logger.Debug("converted SSE event",
