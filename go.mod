@@ -1,6 +1,6 @@
 module github.com/ml0-1337/claude-gate
 
-go 1.24
+go 1.23
 
 require (
 	github.com/99designs/keyring v1.2.2
