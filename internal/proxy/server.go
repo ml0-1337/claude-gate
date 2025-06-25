@@ -67,6 +67,9 @@ func CreateMux(proxyHandler http.Handler, healthHandler http.Handler) http.Handl
 	// Root endpoint
 	mux.Handle("/", &RootHandler{})
 	
+	// Models endpoint for OpenAI compatibility
+	mux.Handle("/v1/models", NewModelsHandler())
+	
 	// All other paths go to the proxy
 	mux.Handle("/v1/", proxyHandler)
 	

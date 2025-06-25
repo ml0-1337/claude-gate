@@ -1,10 +1,12 @@
 package proxy
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -57,6 +59,15 @@ func NewProxyHandler(config *ProxyConfig) *ProxyHandler {
 
 // ServeHTTP implements http.Handler interface
 func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Handle CORS preflight requests
+	if r.Method == "OPTIONS" {
+		h.handleCORS(w, r)
+		return
+	}
+	
+	// Set CORS headers for all requests
+	h.setCORSHeaders(w, r)
+	
 	// Get OAuth token
 	token, err := h.config.TokenProvider.GetAccessToken()
 	if err != nil {
@@ -117,20 +128,43 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	isStreaming := strings.Contains(resp.Header.Get("Content-Type"), "text/event-stream") ||
 		strings.Contains(r.URL.RawQuery, "stream=true")
 	
-	// Copy response headers
-	for key, values := range resp.Header {
-		for _, value := range values {
-			w.Header().Add(key, value)
+	// Also check the request body for stream parameter
+	if !isStreaming && len(body) > 0 {
+		var reqData map[string]interface{}
+		if err := json.Unmarshal(body, &reqData); err == nil {
+			if stream, ok := reqData["stream"].(bool); ok && stream {
+				isStreaming = true
+			}
 		}
 	}
 	
-	// Write status code
-	w.WriteHeader(resp.StatusCode)
-	
 	// Handle response body
 	if isStreaming {
-		// For SSE, we need to flush after each write
-		h.streamResponse(w, resp)
+		// Copy response headers for streaming
+		for key, values := range resp.Header {
+			for _, value := range values {
+				w.Header().Add(key, value)
+			}
+		}
+		
+		// Write status code
+		w.WriteHeader(resp.StatusCode)
+		
+		// For OpenAI endpoints, convert SSE format
+		if path == "/v1/chat/completions" {
+			// Log that we're converting for OpenAI
+			if h.config.Transformer != nil {
+				// Using a simple log for debugging
+				json.NewEncoder(io.Discard).Encode(map[string]string{
+					"debug": "Converting Anthropic SSE to OpenAI format for streaming",
+					"path":  path,
+				})
+			}
+			h.streamOpenAIResponse(w, resp, path)
+		} else {
+			// For SSE, we need to flush after each write
+			h.streamResponse(w, resp)
+		}
 	} else {
 		// For OpenAI endpoints, transform response back
 		if path == "/v1/chat/completions" {
@@ -144,13 +178,45 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			transformedResp, err := h.config.Transformer.TransformResponseBody(respBody, path)
 			if err != nil {
 				// If transformation fails, return original
+				// Copy headers excluding Content-Length
+				for key, values := range resp.Header {
+					if strings.ToLower(key) != "content-length" {
+						for _, value := range values {
+							w.Header().Add(key, value)
+						}
+					}
+				}
+				w.WriteHeader(resp.StatusCode)
 				w.Write(respBody)
 				return
 			}
 			
+			// Copy headers excluding Content-Length and Content-Encoding
+			for key, values := range resp.Header {
+				if strings.ToLower(key) != "content-length" && strings.ToLower(key) != "content-encoding" {
+					for _, value := range values {
+						w.Header().Add(key, value)
+					}
+				}
+			}
+			
+			// Write status code
+			w.WriteHeader(resp.StatusCode)
+			
+			// Write transformed response (Go will set correct Content-Length)
 			w.Write(transformedResp)
 		} else {
-			// Regular response - just copy
+			// Regular response - copy headers and body
+			for key, values := range resp.Header {
+				for _, value := range values {
+					w.Header().Add(key, value)
+				}
+			}
+			
+			// Write status code
+			w.WriteHeader(resp.StatusCode)
+			
+			// Just copy
 			io.Copy(w, resp.Body)
 		}
 	}
@@ -185,6 +251,63 @@ func (h *ProxyHandler) streamResponse(w http.ResponseWriter, resp *http.Response
 	}
 }
 
+// streamOpenAIResponse converts Anthropic SSE to OpenAI SSE format
+func (h *ProxyHandler) streamOpenAIResponse(w http.ResponseWriter, resp *http.Response, path string) {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		// Fallback to regular streaming if flusher not available
+		h.streamResponse(w, resp)
+		return
+	}
+	
+	// Generate message ID and timestamp for consistency
+	messageID := "chatcmpl-" + generateRandomID()
+	created := time.Now().Unix()
+	model := "claude-3-5-sonnet-20241022" // Default model
+	
+	scanner := bufio.NewScanner(resp.Body)
+	var currentEvent string
+	
+	for scanner.Scan() {
+		line := scanner.Text()
+		
+		if strings.HasPrefix(line, "event: ") {
+			currentEvent = strings.TrimPrefix(line, "event: ")
+		} else if strings.HasPrefix(line, "data: ") {
+			data := strings.TrimPrefix(line, "data: ")
+			
+			// Extract model from message_start if available
+			if currentEvent == "message_start" {
+				var msgData map[string]interface{}
+				if err := json.Unmarshal([]byte(data), &msgData); err == nil {
+					if msg, ok := msgData["message"].(map[string]interface{}); ok {
+						if m, ok := msg["model"].(string); ok {
+							model = m
+						}
+					}
+				}
+			}
+			
+			// Convert the SSE event
+			converted, err := ConvertAnthropicSSEToOpenAI(currentEvent, data, messageID, model, created)
+			if err == nil && converted != "" {
+				w.Write([]byte(converted))
+				flusher.Flush()
+			}
+		}
+	}
+}
+
+// generateRandomID generates a random ID for OpenAI format
+func generateRandomID() string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, 29)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+	return string(b)
+}
+
 // writeError writes an error response in Anthropic's error format
 func (h *ProxyHandler) writeError(w http.ResponseWriter, statusCode int, errorType, message string) {
 	w.Header().Set("Content-Type", "application/json")
@@ -198,6 +321,26 @@ func (h *ProxyHandler) writeError(w http.ResponseWriter, statusCode int, errorTy
 	}
 	
 	json.NewEncoder(w).Encode(errorResp)
+}
+
+// setCORSHeaders sets CORS headers for all responses
+func (h *ProxyHandler) setCORSHeaders(w http.ResponseWriter, r *http.Request) {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		origin = "*"
+	}
+	
+	w.Header().Set("Access-Control-Allow-Origin", origin)
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Max-Age", "3600")
+}
+
+// handleCORS handles CORS preflight requests
+func (h *ProxyHandler) handleCORS(w http.ResponseWriter, r *http.Request) {
+	h.setCORSHeaders(w, r)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // ProxyServer wraps the handler with additional server functionality

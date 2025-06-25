@@ -74,7 +74,7 @@ Anthropic format:
 - [x] Test 9: Should convert error responses back to OpenAI format
 - [ ] Test 10: Should handle edge case of empty messages array
 
-**Current Test**: Basic implementation complete, need to test with actual Cursor
+**Current Test**: Adding CORS headers and /v1/models endpoint for Cursor IDE compatibility
 
 ## Test Cases
 

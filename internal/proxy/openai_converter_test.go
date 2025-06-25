@@ -176,6 +176,97 @@ func TestConvertOpenAIToAnthropic(t *testing.T) {
 		assert.Len(t, messages, 1)
 		assert.Equal(t, "user", messages[0].(map[string]interface{})["role"])
 	})
+	
+	t.Run("should handle complex content format from Cursor", func(t *testing.T) {
+		// Arrange - mimicking Cursor's actual request format
+		openAIRequest := map[string]interface{}{
+			"model": "anthropic/claude-3-5-sonnet-20241022",
+			"messages": []interface{}{
+				map[string]interface{}{
+					"role": "system",
+					"content": []interface{}{
+						map[string]interface{}{
+							"type": "text",
+							"text": "You are an AI programming assistant.",
+							"cache_control": map[string]interface{}{
+								"type": "ephemeral",
+							},
+						},
+					},
+				},
+				map[string]interface{}{
+					"role": "user",
+					"content": []interface{}{
+						map[string]interface{}{
+							"type": "text",
+							"text": "Please help me fix this code",
+						},
+					},
+				},
+				map[string]interface{}{
+					"role": "assistant",
+					"content": []interface{}{
+						map[string]interface{}{
+							"type": "text",
+							"text": "I'll help you fix the code.",
+						},
+					},
+				},
+			},
+			"max_tokens": 4096,
+			"temperature": 0.2,
+			"tools": []interface{}{
+				map[string]interface{}{
+					"type": "function",
+					"function": map[string]interface{}{
+						"name": "str_replace_editor",
+						"description": "Replace text in a file",
+					},
+				},
+			},
+		}
+		
+		requestBody, err := json.Marshal(openAIRequest)
+		require.NoError(t, err)
+		
+		// Act
+		result, err := ConvertOpenAIToAnthropic(requestBody)
+		
+		// Assert
+		require.NoError(t, err)
+		
+		var anthropicRequest map[string]interface{}
+		err = json.Unmarshal(result, &anthropicRequest)
+		require.NoError(t, err)
+		
+		// Check model name (prefix removed)
+		assert.Equal(t, "claude-3-5-sonnet-20241022", anthropicRequest["model"])
+		
+		// Check system field extracted correctly
+		expectedSystem := []interface{}{
+			map[string]interface{}{"type": "text", "text": ClaudeCodePrompt},
+			map[string]interface{}{"type": "text", "text": "You are an AI programming assistant."},
+		}
+		assert.Equal(t, expectedSystem, anthropicRequest["system"])
+		
+		// Check messages preserved structured content
+		messages := anthropicRequest["messages"].([]interface{})
+		assert.Len(t, messages, 2) // user and assistant messages
+		
+		// Check user message
+		userMsg := messages[0].(map[string]interface{})
+		assert.Equal(t, "user", userMsg["role"])
+		userContent := userMsg["content"].([]interface{})
+		assert.Equal(t, "text", userContent[0].(map[string]interface{})["type"])
+		assert.Equal(t, "Please help me fix this code", userContent[0].(map[string]interface{})["text"])
+		
+		// Check assistant message
+		assistantMsg := messages[1].(map[string]interface{})
+		assert.Equal(t, "assistant", assistantMsg["role"])
+		
+		// Check tools are preserved
+		assert.Equal(t, openAIRequest["tools"], anthropicRequest["tools"])
+	})
 }
 
 func TestConvertAnthropicToOpenAI(t *testing.T) {
@@ -236,5 +327,114 @@ func TestConvertAnthropicToOpenAI(t *testing.T) {
 		assert.Equal(t, float64(10), usage["prompt_tokens"])
 		assert.Equal(t, float64(20), usage["completion_tokens"])
 		assert.Equal(t, float64(30), usage["total_tokens"])
+	})
+	
+	t.Run("should convert Anthropic error response to OpenAI format", func(t *testing.T) {
+		// Arrange
+		anthropicError := map[string]interface{}{
+			"error": map[string]interface{}{
+				"type":    "invalid_request_error",
+				"message": "messages: at least one message is required",
+			},
+		}
+		
+		errorBody, err := json.Marshal(anthropicError)
+		require.NoError(t, err)
+		
+		// Act
+		result, err := ConvertAnthropicToOpenAI(errorBody)
+		
+		// Assert
+		require.NoError(t, err)
+		
+		var openAIError map[string]interface{}
+		err = json.Unmarshal(result, &openAIError)
+		require.NoError(t, err)
+		
+		// Check error format
+		errorObj := openAIError["error"].(map[string]interface{})
+		assert.Equal(t, "messages: at least one message is required", errorObj["message"])
+		assert.Equal(t, "invalid_request_error", errorObj["type"])
+		assert.Nil(t, errorObj["param"])
+		assert.Nil(t, errorObj["code"])
+	})
+}
+
+func TestConvertAnthropicSSEToOpenAI(t *testing.T) {
+	messageID := "chatcmpl-test123"
+	model := "claude-3-opus-20240229"
+	created := int64(1719331200)
+	
+	t.Run("should convert message_start event", func(t *testing.T) {
+		// Arrange
+		event := "message_start"
+		data := `{"type":"message_start","message":{"id":"msg_123","type":"message","role":"assistant","model":"claude-3-opus-20240229","content":[],"stop_reason":null}}`
+		
+		// Act
+		result, err := ConvertAnthropicSSEToOpenAI(event, data, messageID, model, created)
+		
+		// Assert
+		require.NoError(t, err)
+		assert.Contains(t, result, "data: ")
+		assert.Contains(t, result, `"object":"chat.completion.chunk"`)
+		assert.Contains(t, result, `"role":"assistant"`)
+		assert.Contains(t, result, messageID)
+	})
+	
+	t.Run("should convert content_block_delta event", func(t *testing.T) {
+		// Arrange
+		event := "content_block_delta"
+		data := `{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Hello world"}}`
+		
+		// Act
+		result, err := ConvertAnthropicSSEToOpenAI(event, data, messageID, model, created)
+		
+		// Assert
+		require.NoError(t, err)
+		assert.Contains(t, result, "data: ")
+		assert.Contains(t, result, `"content":"Hello world"`)
+		assert.Contains(t, result, `"finish_reason":null`)
+	})
+	
+	t.Run("should convert message_stop event with DONE", func(t *testing.T) {
+		// Arrange
+		event := "message_stop"
+		data := `{"type":"message_stop"}`
+		
+		// Act
+		result, err := ConvertAnthropicSSEToOpenAI(event, data, messageID, model, created)
+		
+		// Assert
+		require.NoError(t, err)
+		assert.Contains(t, result, "data: ")
+		assert.Contains(t, result, `"finish_reason":"stop"`)
+		assert.Contains(t, result, "data: [DONE]")
+	})
+	
+	t.Run("should convert message_delta with stop reason", func(t *testing.T) {
+		// Arrange
+		event := "message_delta"
+		data := `{"type":"message_delta","delta":{"stop_reason":"max_tokens"}}`
+		
+		// Act
+		result, err := ConvertAnthropicSSEToOpenAI(event, data, messageID, model, created)
+		
+		// Assert
+		require.NoError(t, err)
+		assert.Contains(t, result, "data: ")
+		assert.Contains(t, result, `"finish_reason":"length"`)
+	})
+	
+	t.Run("should skip unhandled events", func(t *testing.T) {
+		// Arrange
+		event := "ping"
+		data := `{"type":"ping"}`
+		
+		// Act
+		result, err := ConvertAnthropicSSEToOpenAI(event, data, messageID, model, created)
+		
+		// Assert
+		require.NoError(t, err)
+		assert.Empty(t, result)
 	})
 }
