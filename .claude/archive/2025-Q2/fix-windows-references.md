@@ -1,8 +1,8 @@
 ---
 todo_id: fix-windows-references
 started: 2025-06-25 13:11:39
-completed:
-status: in_progress
+completed: 2025-06-25 13:16:30
+status: completed
 priority: high
 ---
 
@@ -96,7 +96,7 @@ No errors, only updated darwin and linux platforms
 - [x] Check scripts/test-npm-local.sh for Windows references (already commented out)
 - [x] Check scripts/build-release.sh for Windows references (only in grep pattern, no issue)
 - [x] Run tests locally to verify fixes
-- [ ] Commit changes
+- [x] Commit changes
 
 ## Working Scratchpad
 
