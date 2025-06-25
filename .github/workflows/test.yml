@@ -113,7 +113,6 @@ jobs:
           test -f dist/claude-gate_*_darwin_arm64/claude-gate
           test -f dist/claude-gate_*_linux_amd64*/claude-gate
           test -f dist/claude-gate_*_linux_arm64/claude-gate
-          test -f dist/claude-gate_*_windows_amd64*/claude-gate.exe
 
   test-scripts:
     name: Test Scripts

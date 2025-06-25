@@ -37,18 +37,16 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     sed -i '' "s/\"@claude-gate\/darwin-arm64\": \".*\"/\"@claude-gate\/darwin-arm64\": \"$VERSION\"/" npm/package.json
     sed -i '' "s/\"@claude-gate\/linux-x64\": \".*\"/\"@claude-gate\/linux-x64\": \"$VERSION\"/" npm/package.json
     sed -i '' "s/\"@claude-gate\/linux-arm64\": \".*\"/\"@claude-gate\/linux-arm64\": \"$VERSION\"/" npm/package.json
-    sed -i '' "s/\"@claude-gate\/win32-x64\": \".*\"/\"@claude-gate\/win32-x64\": \"$VERSION\"/" npm/package.json
 else
     sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" npm/package.json
     sed -i "s/\"@claude-gate\/darwin-x64\": \".*\"/\"@claude-gate\/darwin-x64\": \"$VERSION\"/" npm/package.json
     sed -i "s/\"@claude-gate\/darwin-arm64\": \".*\"/\"@claude-gate\/darwin-arm64\": \"$VERSION\"/" npm/package.json
     sed -i "s/\"@claude-gate\/linux-x64\": \".*\"/\"@claude-gate\/linux-x64\": \"$VERSION\"/" npm/package.json
     sed -i "s/\"@claude-gate\/linux-arm64\": \".*\"/\"@claude-gate\/linux-arm64\": \"$VERSION\"/" npm/package.json
-    sed -i "s/\"@claude-gate\/win32-x64\": \".*\"/\"@claude-gate\/win32-x64\": \"$VERSION\"/" npm/package.json
 fi
 
 # Update platform packages
-for platform in darwin-x64 darwin-arm64 linux-x64 linux-arm64 win32-x64; do
+for platform in darwin-x64 darwin-arm64 linux-x64 linux-arm64; do
     echo "Updating npm/platforms/$platform/package.json..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
         sed -i '' "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "npm/platforms/$platform/package.json"

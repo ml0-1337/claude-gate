@@ -49,11 +49,8 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     
-    # Use tar.gz for Unix, zip for Windows
+    # Use tar.gz for all platforms
     formats: ["tar.gz"]
-    format_overrides:
-      - goos: windows
-        formats: ["zip"]
     
     # Files to include in the archive
     files:

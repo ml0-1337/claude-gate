@@ -194,7 +194,6 @@ test_npm_package_structure() {
         "darwin-arm64"
         "linux-x64"
         "linux-arm64"
-        "win32-x64"
     )
     
     for platform in "${platforms[@]}"; do
@@ -283,7 +282,7 @@ test_package_json_validation() {
     fi
     
     # Platform packages
-    for platform in darwin-x64 darwin-arm64 linux-x64 linux-arm64 win32-x64; do
+    for platform in darwin-x64 darwin-arm64 linux-x64 linux-arm64; do
         if node -e "JSON.parse(require('fs').readFileSync('npm/platforms/$platform/package.json'))" 2>/dev/null; then
             log_success "Platform package.json valid: $platform"
         else
