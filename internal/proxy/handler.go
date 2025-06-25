@@ -83,6 +83,17 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 	
+	// Check if this is a streaming request
+	isStreamingRequest := false
+	if len(body) > 0 {
+		var reqData map[string]interface{}
+		if err := json.Unmarshal(body, &reqData); err == nil {
+			if stream, ok := reqData["stream"].(bool); ok && stream {
+				isStreamingRequest = true
+			}
+		}
+	}
+	
 	// Transform request body if needed
 	path := r.URL.Path
 	transformedBody, err := h.config.Transformer.TransformRequestBody(body, path)
@@ -111,6 +122,13 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.writeError(w, http.StatusInternalServerError, "Failed to create upstream request", err.Error())
 		return
+	}
+	
+	// For streaming requests, ensure proper connection handling
+	if isStreamingRequest {
+		// Set headers to prevent connection reuse for SSE
+		r.Header.Set("Connection", "close")
+		r.Header.Set("Cache-Control", "no-cache")
 	}
 	
 	// Inject OAuth headers
@@ -147,9 +165,10 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		
-		// Add headers to prevent proxy buffering
+		// Add headers to prevent proxy buffering and connection reuse
 		w.Header().Set("X-Accel-Buffering", "no") // Disable nginx buffering
 		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "close") // Close connection after SSE stream
 		
 		// Write status code
 		w.WriteHeader(resp.StatusCode)

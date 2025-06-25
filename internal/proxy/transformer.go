@@ -149,6 +149,16 @@ func (t *RequestTransformer) InjectHeaders(headers map[string][]string, accessTo
 		newHeaders.Set("Accept", "*/*")
 	}
 	
+	// Preserve Connection header for proper SSE handling
+	if connection := getHeader(headers, "Connection"); connection != "" {
+		newHeaders.Set("Connection", connection)
+	}
+	
+	// Preserve cache control headers for SSE
+	if cacheControl := getHeader(headers, "Cache-Control"); cacheControl != "" {
+		newHeaders.Set("Cache-Control", cacheControl)
+	}
+	
 	return newHeaders
 }
 

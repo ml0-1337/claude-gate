@@ -215,4 +215,25 @@ func TestHeaderInjection(t *testing.T) {
 		assert.Equal(t, "application/json", result.Get("Content-Type"))
 		assert.Equal(t, "*/*", result.Get("Accept"))
 	})
+	
+	t.Run("preserves streaming headers", func(t *testing.T) {
+		headers := map[string][]string{
+			"Content-Type":  {"application/json"},
+			"Accept":        {"text/event-stream"},
+			"Connection":    {"close"},
+			"Cache-Control": {"no-cache"},
+		}
+		
+		token := "test-access-token"
+		result := transformer.InjectHeaders(headers, token)
+		
+		// Check streaming headers are preserved
+		assert.Equal(t, "close", result.Get("Connection"))
+		assert.Equal(t, "no-cache", result.Get("Cache-Control"))
+		assert.Equal(t, "text/event-stream", result.Get("Accept"))
+		
+		// Check OAuth headers are still added
+		assert.Equal(t, "Bearer test-access-token", result.Get("Authorization"))
+		assert.Equal(t, "oauth-2025-04-20", result.Get("anthropic-beta"))
+	})
 }
