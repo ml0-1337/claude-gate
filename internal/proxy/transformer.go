@@ -87,6 +87,18 @@ func (t *RequestTransformer) MapModelAlias(model string) string {
 
 // TransformRequestBody applies all necessary transformations to the request body
 func (t *RequestTransformer) TransformRequestBody(body []byte, path string) ([]byte, error) {
+	// Handle OpenAI chat completions endpoint
+	if path == "/v1/chat/completions" {
+		// Convert OpenAI format to Anthropic format
+		convertedBody, err := ConvertOpenAIToAnthropic(body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert OpenAI format: %w", err)
+		}
+		
+		// Apply standard transformations to the converted body
+		return t.TransformRequestBody(convertedBody, "/v1/messages")
+	}
+	
 	// Only transform messages endpoint
 	if path != "/v1/messages" {
 		return body, nil
@@ -155,4 +167,13 @@ func getHeader(headers map[string][]string, key string) string {
 	}
 	
 	return ""
+}
+
+// TransformResponseBody transforms response body based on the endpoint
+func (t *RequestTransformer) TransformResponseBody(body []byte, path string) ([]byte, error) {
+	if path == "/v1/chat/completions" {
+		// Convert Anthropic response to OpenAI format
+		return ConvertAnthropicToOpenAI(body)
+	}
+	return body, nil
 }

@@ -80,13 +80,19 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
+	// Transform path for OpenAI endpoints
+	upstreamPath := path
+	if path == "/v1/chat/completions" {
+		upstreamPath = "/v1/messages"
+	}
+	
 	// Build upstream URL
 	upstreamURL, err := url.Parse(h.config.UpstreamURL)
 	if err != nil {
 		h.writeError(w, http.StatusInternalServerError, "Invalid upstream URL", err.Error())
 		return
 	}
-	upstreamURL.Path = path
+	upstreamURL.Path = upstreamPath
 	upstreamURL.RawQuery = r.URL.RawQuery
 	
 	// Create upstream request
@@ -126,8 +132,27 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// For SSE, we need to flush after each write
 		h.streamResponse(w, resp)
 	} else {
-		// Regular response - just copy
-		io.Copy(w, resp.Body)
+		// For OpenAI endpoints, transform response back
+		if path == "/v1/chat/completions" {
+			respBody, err := io.ReadAll(resp.Body)
+			if err != nil {
+				h.writeError(w, http.StatusInternalServerError, "Failed to read response", err.Error())
+				return
+			}
+			
+			// Transform Anthropic response to OpenAI format
+			transformedResp, err := h.config.Transformer.TransformResponseBody(respBody, path)
+			if err != nil {
+				// If transformation fails, return original
+				w.Write(respBody)
+				return
+			}
+			
+			w.Write(transformedResp)
+		} else {
+			// Regular response - just copy
+			io.Copy(w, resp.Body)
+		}
 	}
 }
 
