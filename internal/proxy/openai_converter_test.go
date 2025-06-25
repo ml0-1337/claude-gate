@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -439,6 +440,15 @@ func TestConvertAnthropicSSEToOpenAI(t *testing.T) {
 	})
 	
 	t.Run("should convert input_json_delta events to OpenAI tool format", func(t *testing.T) {
+		// Reset state
+		ResetSSEConverterState()
+		
+		// First set up a tool
+		startEvent := "content_block_start"
+		startData := `{"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_123","name":"get_weather"}}`
+		_, err := ConvertAnthropicSSEToOpenAI(startEvent, startData, messageID, model, created)
+		require.NoError(t, err)
+		
 		// Arrange
 		event := "content_block_delta"
 		data := `{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"location\": \"San Fra"}}`
@@ -455,6 +465,9 @@ func TestConvertAnthropicSSEToOpenAI(t *testing.T) {
 	})
 	
 	t.Run("should handle content_block_start for tool_use", func(t *testing.T) {
+		// Reset state
+		ResetSSEConverterState()
+		
 		// Arrange
 		event := "content_block_start"
 		data := `{"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_123","name":"get_weather"}}`
@@ -472,6 +485,15 @@ func TestConvertAnthropicSSEToOpenAI(t *testing.T) {
 	})
 	
 	t.Run("should handle empty tool input gracefully", func(t *testing.T) {
+		// Reset state
+		ResetSSEConverterState()
+		
+		// First set up a tool
+		startEvent := "content_block_start"
+		startData := `{"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_empty","name":"test_tool"}}`
+		_, err := ConvertAnthropicSSEToOpenAI(startEvent, startData, messageID, model, created)
+		require.NoError(t, err)
+		
 		// Arrange
 		event := "content_block_delta"
 		data := `{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":""}}`
@@ -486,6 +508,9 @@ func TestConvertAnthropicSSEToOpenAI(t *testing.T) {
 	})
 	
 	t.Run("should handle multiple tool deltas in sequence", func(t *testing.T) {
+		// Reset state
+		ResetSSEConverterState()
+		
 		// Arrange - simulating a sequence of tool use events
 		events := []struct {
 			event string
@@ -511,6 +536,71 @@ func TestConvertAnthropicSSEToOpenAI(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotEmpty(t, result)
 			assert.Contains(t, result, "data: ")
+		}
+	})
+	
+	t.Run("should include tool ID in input_json_delta events", func(t *testing.T) {
+		// Reset state
+		ResetSSEConverterState()
+		
+		// Arrange - first set up a tool
+		startEvent := "content_block_start"
+		startData := `{"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_789","name":"search"}}`
+		
+		// Start the tool
+		_, err := ConvertAnthropicSSEToOpenAI(startEvent, startData, messageID, model, created)
+		require.NoError(t, err)
+		
+		// Now send a delta
+		deltaEvent := "content_block_delta"
+		deltaData := `{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"query\": \"test\""}}`
+		
+		// Act
+		result, err := ConvertAnthropicSSEToOpenAI(deltaEvent, deltaData, messageID, model, created)
+		
+		// Assert - the delta should include the tool ID
+		require.NoError(t, err)
+		assert.Contains(t, result, "data: ")
+		assert.Contains(t, result, `"id":"toolu_789"`) // Tool ID should be included
+		assert.Contains(t, result, `"arguments":"{\"query\": \"test\""`)
+	})
+	
+	t.Run("should handle multiple tools with correct indices", func(t *testing.T) {
+		// Reset state
+		ResetSSEConverterState()
+		
+		// Arrange - simulate multiple tools
+		events := []struct {
+			event       string
+			data        string
+			wantToolIdx int // Expected OpenAI tool index
+		}{
+			{
+				event:       "content_block_start",
+				data:        `{"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}`,
+				wantToolIdx: -1, // Not a tool
+			},
+			{
+				event:       "content_block_start",
+				data:        `{"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_001","name":"first_tool"}}`,
+				wantToolIdx: 0, // First tool should be index 0
+			},
+			{
+				event:       "content_block_start",
+				data:        `{"type":"content_block_start","index":2,"content_block":{"type":"tool_use","id":"toolu_002","name":"second_tool"}}`,
+				wantToolIdx: 1, // Second tool should be index 1
+			},
+		}
+		
+		// Act & Assert
+		for _, tc := range events {
+			result, err := ConvertAnthropicSSEToOpenAI(tc.event, tc.data, messageID, model, created)
+			require.NoError(t, err)
+			
+			if tc.wantToolIdx >= 0 {
+				// For tool blocks, check the index
+				assert.Contains(t, result, fmt.Sprintf(`"index":%d`, tc.wantToolIdx))
+			}
 		}
 	})
 }

@@ -92,7 +92,7 @@ From OpenAI documentation:
 - [x] Test 6: Should log skipped/unhandled event types for debugging
 - [ ] Test 7: Should maintain message continuity with tool use blocks
 
-**Current Test**: Working on Test 1: Should convert text_delta events to OpenAI format
+**Current Test**: Working on fixing tool index and ID issues in streaming
 
 **Remember**: This is behavioral analysis only. NO implementation details, NO "how", only "what".
 
@@ -139,6 +139,18 @@ From OpenAI documentation:
 - Added debug logging for unhandled event types
 - Added content_block_stop handling to clean up tool state
 - All tests still passing
+
+# Fix for tool index and ID issues
+[2025-06-25 19:29:00] Red Phase: New tests failing as expected
+- TestConvertAnthropicSSEToOpenAI/should_include_tool_ID_in_input_json_delta_events: FAIL
+- TestConvertAnthropicSSEToOpenAI/should_handle_multiple_tools_with_correct_indices: FAIL
+
+[2025-06-25 19:31:00] Green Phase: All tests passing!
+- Fixed tool index mapping (Anthropic block index → OpenAI tool call index)
+- Added tool ID to all delta events
+- Added ResetSSEConverterState for test isolation
+- Reset tool call index on message_start
+- All tests passing including new tests for proper tool handling
 ```
 
 ## Checklist
@@ -184,6 +196,18 @@ go test -v ./internal/proxy -run TestConvertAnthropicSSEToOpenAI
 claude-gate start --log-level DEBUG
 # Then send a request that uses tools
 ```
+
+### Issue Found: Tool Index and ID Problems
+From user testing with Cursor:
+- Error: "Model provided invalid arguments to terminal tool"
+- Problem 1: Always using index: 0 in tool_calls array
+- Problem 2: Not including tool ID in input_json_delta events
+- Problem 3: Need to map Anthropic content block index to OpenAI tool call index
+
+Fix needed:
+- Track OpenAI tool call index (0, 1, 2...) separately from Anthropic block index
+- Include tool ID in every delta event
+- Properly handle multiple tools in same message
 
 ## Implementation Plan
 

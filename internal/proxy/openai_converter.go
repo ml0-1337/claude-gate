@@ -236,7 +236,17 @@ func convertAnthropicErrorToOpenAI(errorObj interface{}) ([]byte, error) {
 }
 
 // toolState tracks tool use information across SSE events
+// Key is Anthropic content block index, value contains tool info and OpenAI tool index
 var toolState = make(map[int]map[string]interface{})
+
+// toolCallIndex tracks the next available OpenAI tool call index
+var toolCallIndex = 0
+
+// ResetSSEConverterState resets the converter state (useful for testing)
+func ResetSSEConverterState() {
+	toolState = make(map[int]map[string]interface{})
+	toolCallIndex = 0
+}
 
 // ConvertAnthropicSSEToOpenAI converts a single Anthropic SSE event to OpenAI format
 func ConvertAnthropicSSEToOpenAI(event, data string, messageID string, model string, created int64) (string, error) {
@@ -255,6 +265,9 @@ func ConvertAnthropicSSEToOpenAIWithLogger(event, data string, messageID string,
 	
 	switch eventType {
 	case "message_start":
+		// Reset tool call index for new message
+		toolCallIndex = 0
+		
 		// Convert message_start to initial OpenAI chunk
 		chunk := map[string]interface{}{
 			"id":      messageID,
@@ -283,11 +296,14 @@ func ConvertAnthropicSSEToOpenAIWithLogger(event, data string, messageID string,
 				toolID, _ := contentBlock["id"].(string)
 				toolName, _ := contentBlock["name"].(string)
 				
-				// Store tool info for this index
+				// Store tool info for this index with OpenAI tool index
+				currentToolIndex := toolCallIndex
 				toolState[index] = map[string]interface{}{
-					"id":   toolID,
-					"name": toolName,
+					"id":        toolID,
+					"name":      toolName,
+					"toolIndex": currentToolIndex,
 				}
+				toolCallIndex++
 				
 				// Send initial tool call chunk
 				chunk := map[string]interface{}{
@@ -301,7 +317,7 @@ func ConvertAnthropicSSEToOpenAIWithLogger(event, data string, messageID string,
 							"delta": map[string]interface{}{
 								"tool_calls": []interface{}{
 									map[string]interface{}{
-										"index": 0,
+										"index": currentToolIndex,
 										"id":    toolID,
 										"type":  "function",
 										"function": map[string]interface{}{
@@ -362,31 +378,41 @@ func ConvertAnthropicSSEToOpenAIWithLogger(event, data string, messageID string,
 			} else if delta["type"] == "input_json_delta" {
 				// Handle tool use deltas
 				if partialJSON, ok := delta["partial_json"].(string); ok {
-					// Create tool delta chunk
-					chunk := map[string]interface{}{
-						"id":      messageID,
-						"object":  "chat.completion.chunk",
-						"created": created,
-						"model":   model,
-						"choices": []interface{}{
-							map[string]interface{}{
-								"index": 0,
-								"delta": map[string]interface{}{
-									"tool_calls": []interface{}{
-										map[string]interface{}{
-											"index": 0,
-											"function": map[string]interface{}{
-												"arguments": partialJSON,
+					// Get the content block index
+					blockIndex := int(eventData["index"].(float64))
+					
+					// Look up the tool info for this block
+					if toolInfo, exists := toolState[blockIndex]; exists {
+						toolIndex := toolInfo["toolIndex"].(int)
+						toolID := toolInfo["id"].(string)
+						
+						// Create tool delta chunk with tool ID
+						chunk := map[string]interface{}{
+							"id":      messageID,
+							"object":  "chat.completion.chunk",
+							"created": created,
+							"model":   model,
+							"choices": []interface{}{
+								map[string]interface{}{
+									"index": 0,
+									"delta": map[string]interface{}{
+										"tool_calls": []interface{}{
+											map[string]interface{}{
+												"index": toolIndex,
+												"id":    toolID,
+												"function": map[string]interface{}{
+													"arguments": partialJSON,
+												},
 											},
 										},
 									},
+									"finish_reason": nil,
 								},
-								"finish_reason": nil,
 							},
-						},
+						}
+						chunkJSON, _ := json.Marshal(chunk)
+						return "data: " + string(chunkJSON) + "\n\n", nil
 					}
-					chunkJSON, _ := json.Marshal(chunk)
-					return "data: " + string(chunkJSON) + "\n\n", nil
 				}
 			}
 		}
