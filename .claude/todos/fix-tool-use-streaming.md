@@ -84,12 +84,12 @@ From OpenAI documentation:
 
 **MANDATORY for TDD**: List all test scenarios BEFORE writing any tests. Focus on behavior, not implementation.
 
-- [ ] Test 1: Should convert text_delta events to OpenAI format
-- [ ] Test 2: Should convert input_json_delta events to OpenAI tool format
+- [x] Test 1: Should convert text_delta events to OpenAI format
+- [x] Test 2: Should convert input_json_delta events to OpenAI tool format
 - [ ] Test 3: Should handle mixed text and tool content in same stream
-- [ ] Test 4: Should preserve tool names and arguments correctly
-- [ ] Test 5: Should handle empty tool input gracefully
-- [ ] Test 6: Should log skipped/unhandled event types for debugging
+- [x] Test 4: Should preserve tool names and arguments correctly
+- [x] Test 5: Should handle empty tool input gracefully
+- [x] Test 6: Should log skipped/unhandled event types for debugging
 - [ ] Test 7: Should maintain message continuity with tool use blocks
 
 **Current Test**: Working on Test 1: Should convert text_delta events to OpenAI format
@@ -143,11 +143,11 @@ From OpenAI documentation:
 
 ## Checklist
 
-- [ ] Research Anthropic's tool use SSE format
-- [ ] Research OpenAI's streaming tool call format
-- [ ] Write failing tests for tool use conversion
-- [ ] Implement tool use delta conversion
-- [ ] Add debug logging for unhandled events
+- [x] Research Anthropic's tool use SSE format
+- [x] Research OpenAI's streaming tool call format
+- [x] Write failing tests for tool use conversion
+- [x] Implement tool use delta conversion
+- [x] Add debug logging for unhandled events
 - [ ] Test with Cursor using tool-heavy prompts
 - [ ] Document the streaming format differences
 
