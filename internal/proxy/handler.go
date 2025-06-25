@@ -147,6 +147,10 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		
+		// Add headers to prevent proxy buffering
+		w.Header().Set("X-Accel-Buffering", "no") // Disable nginx buffering
+		w.Header().Set("Cache-Control", "no-cache")
+		
 		// Write status code
 		w.WriteHeader(resp.StatusCode)
 		
@@ -296,6 +300,17 @@ func (h *ProxyHandler) streamOpenAIResponse(w http.ResponseWriter, resp *http.Re
 			}
 		}
 	}
+	
+	// Check for scanner errors
+	if err := scanner.Err(); err != nil {
+		// Log error but don't write to response as we're already streaming
+		// The connection might have been closed by the client
+		return
+	}
+	
+	// Send the [DONE] marker to properly close the OpenAI SSE stream
+	w.Write([]byte("data: [DONE]\n\n"))
+	flusher.Flush()
 }
 
 // generateRandomID generates a random ID for OpenAI format

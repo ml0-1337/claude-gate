@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -158,6 +159,65 @@ func TestProxyHandler(t *testing.T) {
 		assert.Contains(t, body, "event: message_start")
 		assert.Contains(t, body, "event: content_block_delta")
 		assert.Contains(t, body, "data: {\"type\":\"content_block_delta\",\"delta\":{\"text\":\"Hello\"}}")
+	})
+	
+	t.Run("handles OpenAI streaming format with [DONE] marker", func(t *testing.T) {
+		// Create test server with SSE response
+		upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/event-stream")
+			w.Header().Set("Cache-Control", "no-cache")
+			
+			flusher, ok := w.(http.Flusher)
+			require.True(t, ok)
+			
+			// Send Anthropic SSE events
+			events := []string{
+				"event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-3-opus-20240229\"}}\n\n",
+				"event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}\n\n",
+				"event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n",
+			}
+			
+			for _, event := range events {
+				_, err := w.Write([]byte(event))
+				require.NoError(t, err)
+				flusher.Flush()
+			}
+		}))
+		defer upstream.Close()
+		
+		// Create proxy handler
+		handler := NewProxyHandler(&ProxyConfig{
+			UpstreamURL:   upstream.URL,
+			TokenProvider: &mockTokenProvider{token: "test-token"},
+			Transformer:   NewRequestTransformer(),
+		})
+		
+		// Create OpenAI-style request
+		reqBody := map[string]interface{}{
+			"model":  "gpt-4",
+			"stream": true,
+			"messages": []map[string]interface{}{
+				{"role": "user", "content": "Hello"},
+			},
+		}
+		bodyBytes, _ := json.Marshal(reqBody)
+		
+		req := httptest.NewRequest("POST", "/v1/chat/completions", bytes.NewReader(bodyBytes))
+		req.Header.Set("Content-Type", "application/json")
+		
+		// Use a custom ResponseRecorder to capture streaming
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		
+		// Verify we received OpenAI SSE format with [DONE] marker
+		body := w.Body.String()
+		assert.Contains(t, body, "data: {")
+		assert.Contains(t, body, `"object":"chat.completion.chunk"`)
+		assert.Contains(t, body, `"finish_reason":"stop"`)
+		assert.Contains(t, body, "data: [DONE]") // Should end with [DONE] marker
+		
+		// Verify [DONE] is at the end
+		assert.True(t, strings.HasSuffix(strings.TrimSpace(body), "data: [DONE]"))
 	})
 	
 	t.Run("handles token provider errors", func(t *testing.T) {

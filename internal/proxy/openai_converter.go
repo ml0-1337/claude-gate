@@ -293,6 +293,7 @@ func ConvertAnthropicSSEToOpenAI(event, data string, messageID string, model str
 		
 	case "message_stop":
 		// Send final chunk with finish_reason
+		// Note: [DONE] marker should be sent separately by the stream handler
 		chunk := map[string]interface{}{
 			"id":      messageID,
 			"object":  "chat.completion.chunk",
@@ -307,7 +308,7 @@ func ConvertAnthropicSSEToOpenAI(event, data string, messageID string, model str
 			},
 		}
 		chunkJSON, _ := json.Marshal(chunk)
-		return "data: " + string(chunkJSON) + "\n\ndata: [DONE]\n\n", nil
+		return "data: " + string(chunkJSON) + "\n\n", nil
 		
 	case "message_delta":
 		// Handle stop reasons from message_delta

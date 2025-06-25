@@ -396,7 +396,7 @@ func TestConvertAnthropicSSEToOpenAI(t *testing.T) {
 		assert.Contains(t, result, `"finish_reason":null`)
 	})
 	
-	t.Run("should convert message_stop event with DONE", func(t *testing.T) {
+	t.Run("should convert message_stop event without DONE", func(t *testing.T) {
 		// Arrange
 		event := "message_stop"
 		data := `{"type":"message_stop"}`
@@ -408,7 +408,7 @@ func TestConvertAnthropicSSEToOpenAI(t *testing.T) {
 		require.NoError(t, err)
 		assert.Contains(t, result, "data: ")
 		assert.Contains(t, result, `"finish_reason":"stop"`)
-		assert.Contains(t, result, "data: [DONE]")
+		assert.NotContains(t, result, "[DONE]") // DONE should be sent separately
 	})
 	
 	t.Run("should convert message_delta with stop reason", func(t *testing.T) {
