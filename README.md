@@ -20,8 +20,17 @@ Claude Gate is a Go rewrite of claude-auth-bridge that maintains the critical OA
 
 ### 1. Install
 
+**Option A: Build from source** (Currently available)
 ```bash
-npm install -g claude-gate
+git clone https://github.com/ml0-1337/claude-gate.git
+cd claude-gate
+make build
+sudo mv claude-gate /usr/local/bin/
+```
+
+**Option B: NPM** (Coming soon - will be available after first release)
+```bash
+# npm install -g claude-gate
 ```
 
 ### 2. Authenticate
@@ -36,7 +45,7 @@ claude-gate auth login
 claude-gate start
 ```
 
-### 4. Use with any SDK
+### 4. Use with SDK
 
 #### Using Anthropic SDK
 ```python
@@ -78,6 +87,27 @@ print(response.choices[0].message.content)
 
 **Note**: OpenAI SDK compatibility has some limitations. System messages are concatenated to the conversation start, and some OpenAI-specific parameters are ignored.
 
+### 5. Using with Zed Editor
+
+Configure Zed to use Claude Gate by adding this to your `settings.json`:
+
+```json
+{
+  "language_models": {
+    "anthropic": {
+      "api_url": "http://127.0.0.1:5789"
+    }
+  }
+}
+```
+
+You can find your Zed settings at:
+- macOS: `~/.config/zed/settings.json`
+- Linux: `~/.config/zed/settings.json`
+- Windows: `%APPDATA%\Zed\settings.json`
+
+This configuration redirects all Anthropic API calls from Zed to your local Claude Gate proxy, allowing you to use Claude in Zed for FREE with your Pro/Max subscription.
+
 ## Documentation
 
 For detailed documentation, see the [docs](./docs) directory:
@@ -86,6 +116,19 @@ For detailed documentation, see the [docs](./docs) directory:
 - **[User Guides](./docs/guides/)** - Troubleshooting, development, and contributing
 - **[API Reference](./docs/reference/)** - CLI commands and HTTP API
 - **[Architecture](./docs/architecture/)** - System design and security model
+
+## Development
+
+For development and testing:
+
+```bash
+# Prerequisites: Go 1.22+, Node.js 18+, GoReleaser
+make build         # Build for current platform
+make test          # Run tests
+make npm-test      # Build all platforms and test NPM package
+```
+
+See our [Development Guide](./docs/guides/development.md) for detailed instructions.
 
 ## Contributing
 

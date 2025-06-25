@@ -119,20 +119,21 @@ jobs:
             fi
           done
 
-      - name: Publish NPM packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          # Publish platform packages first
-          for pkg in darwin-x64 darwin-arm64 linux-x64 linux-arm64 win32-x64; do
-            cd npm-packages/$pkg
-            npm publish --access public
-            cd ../..
-          done
-          
-          # Publish main package last
-          cd npm-packages/main
-          npm publish --access public
+      # NPM publishing disabled until ready
+      # - name: Publish NPM packages
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      #   run: |
+      #     # Publish platform packages first
+      #     for pkg in darwin-x64 darwin-arm64 linux-x64 linux-arm64 win32-x64; do
+      #       cd npm-packages/$pkg
+      #       npm publish --access public
+      #       cd ../..
+      #     done
+      #     
+      #     # Publish main package last
+      #     cd npm-packages/main
+      #     npm publish --access public
 
       - name: Create GitHub Release Summary
         if: success()
@@ -147,18 +148,17 @@ jobs:
           
           ### 📦 Installation Methods
           
-          #### NPM (Recommended)
-          \`\`\`bash
-          npm install -g claude-gate@${VERSION}
-          \`\`\`
-          
-          #### Homebrew (macOS/Linux)
-          \`\`\`bash
-          brew install ml0-1337/tap/claude-gate
-          \`\`\`
-          
-          #### Direct Download
+          #### Direct Download (Recommended)
           Download the appropriate binary for your platform from the assets below.
+          
+          #### Build from Source
+          \`\`\`bash
+          git clone https://github.com/ml0-1337/claude-gate.git
+          cd claude-gate
+          git checkout v${VERSION}
+          make build
+          sudo mv claude-gate /usr/local/bin/
+          \`\`\`
           
           ### 🔧 Supported Platforms
           - macOS (Intel & Apple Silicon)
@@ -172,33 +172,34 @@ jobs:
           Please report it at: https://github.com/ml0-1337/claude-gate/issues
           "
 
-  test-npm-packages:
-    needs: release
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        node: [18, 20]
-    
-    steps:
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node }}
-
-      - name: Wait for NPM propagation
-        run: |
-          sleep 60  # Wait for packages to be available on NPM
-
-      - name: Test NPM installation
-        run: |
-          npm install -g claude-gate@${{ needs.release.outputs.version }}
-          claude-gate version
-
-      - name: Test basic functionality
-        run: |
-          claude-gate test || true  # Don't fail if proxy isn't running
-
-      - name: Uninstall
-        run: |
-          npm uninstall -g claude-gate
+  # NPM testing disabled until NPM publishing is enabled
+  # test-npm-packages:
+  #   needs: release
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-latest, macos-latest, windows-latest]
+  #       node: [18, 20]
+  #   
+  #   steps:
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: ${{ matrix.node }}
+  #
+  #     - name: Wait for NPM propagation
+  #       run: |
+  #         sleep 60  # Wait for packages to be available on NPM
+  #
+  #     - name: Test NPM installation
+  #       run: |
+  #         npm install -g claude-gate@${{ needs.release.outputs.version }}
+  #         claude-gate version
+  #
+  #     - name: Test basic functionality
+  #       run: |
+  #         claude-gate test || true  # Don't fail if proxy isn't running
+  #
+  #     - name: Uninstall
+  #       run: |
+  #         npm uninstall -g claude-gate

@@ -131,13 +131,15 @@ go run cmd/claude-gate/main.go start --log-level debug
 ### 5. Test NPM Package Locally
 
 ```bash
-# Build for all platforms
-make build-all
+# Build for all platforms and test NPM package
+make npm-test
 
-# Test NPM package installation
-cd npm
-npm link
-cd ..
+# Or separately:
+make snapshot      # Build all platforms with GoReleaser
+./scripts/test-npm-local.sh  # Test NPM package installation
+
+# To test the created package globally:
+npm install -g /path/to/created/claude-gate-0.1.0.tgz
 claude-gate version
 ```
 
