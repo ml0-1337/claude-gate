@@ -585,4 +585,118 @@ data: {"type":"message_stop"}
 		assert.Equal(t, "text", textBlock["type"])
 		assert.Equal(t, "Response with stream false", textBlock["text"])
 	})
+
+	t.Run("OpenAI endpoint non-streaming request should return JSON", func(t *testing.T) {
+		// Test that /v1/chat/completions endpoint respects streaming preference
+		
+		// Create test server that returns SSE
+		upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Verify it's the messages endpoint (transformed from chat/completions)
+			assert.Equal(t, "/v1/messages", r.URL.Path)
+			
+			// Verify the request body
+			body, err := io.ReadAll(r.Body)
+			require.NoError(t, err)
+			
+			var reqData map[string]interface{}
+			err = json.Unmarshal(body, &reqData)
+			require.NoError(t, err)
+			
+			// Should not have stream parameter (OpenAI non-streaming)
+			_, hasStream := reqData["stream"]
+			assert.False(t, hasStream, "non-streaming OpenAI request should not have stream parameter")
+			
+			// Return SSE format (simulating Anthropic behavior)
+			w.Header().Set("Content-Type", "text/event-stream")
+			w.Header().Set("Cache-Control", "no-cache")
+			
+			flusher, ok := w.(http.Flusher)
+			require.True(t, ok)
+			
+			// Send SSE events
+			events := []string{
+				`event: message_start
+data: {"type":"message_start","message":{"id":"msg_789","model":"claude-3-5-sonnet-20241022","role":"assistant","content":[]}}
+
+`,
+				`event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}
+
+`,
+				`event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"OpenAI format response"}}
+
+`,
+				`event: content_block_stop
+data: {"type":"content_block_stop","index":0}
+
+`,
+				`event: message_stop
+data: {"type":"message_stop"}
+
+`,
+			}
+			
+			for _, event := range events {
+				_, err := w.Write([]byte(event))
+				require.NoError(t, err)
+				flusher.Flush()
+			}
+		}))
+		defer upstream.Close()
+		
+		// Create proxy handler
+		handler := NewProxyHandler(&ProxyConfig{
+			UpstreamURL:   upstream.URL,
+			TokenProvider: &mockTokenProvider{token: "test-token"},
+			Transformer:   NewRequestTransformer(),
+		})
+		
+		// Create OpenAI-style request without streaming
+		reqBody := map[string]interface{}{
+			"model": "gpt-4",
+			"messages": []map[string]interface{}{
+				{"role": "system", "content": "You are a helpful assistant."},
+				{"role": "user", "content": "Hello"},
+			},
+		}
+		bodyBytes, _ := json.Marshal(reqBody)
+		
+		req := httptest.NewRequest("POST", "/v1/chat/completions", bytes.NewReader(bodyBytes))
+		req.Header.Set("Content-Type", "application/json")
+		
+		// Execute request
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		
+		// Verify response is JSON in OpenAI format, not SSE
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+		
+		// Verify OpenAI response structure
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		
+		// Should have OpenAI format fields
+		assert.NotEmpty(t, response["id"])
+		assert.Equal(t, "chat.completion", response["object"])
+		assert.NotEmpty(t, response["created"])
+		// Model comes from Anthropic response, not original request
+		assert.Equal(t, "claude-3-5-sonnet-20241022", response["model"])
+		
+		// Check choices array
+		choices, ok := response["choices"].([]interface{})
+		require.True(t, ok)
+		require.Len(t, choices, 1)
+		
+		choice := choices[0].(map[string]interface{})
+		assert.Equal(t, float64(0), choice["index"])
+		
+		message := choice["message"].(map[string]interface{})
+		assert.Equal(t, "assistant", message["role"])
+		assert.Equal(t, "OpenAI format response", message["content"])
+		
+		assert.Equal(t, "stop", choice["finish_reason"])
+	})
 }
