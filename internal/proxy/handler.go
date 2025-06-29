@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"math/rand"
@@ -176,28 +177,17 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"transfer_encoding", resp.Header.Get("Transfer-Encoding"),
 	)
 	
-	// Check if this is a streaming response
-	isStreaming := strings.Contains(resp.Header.Get("Content-Type"), "text/event-stream") ||
-		strings.Contains(r.URL.RawQuery, "stream=true")
-	
-	// Also check the request body for stream parameter
-	if !isStreaming && len(body) > 0 {
-		var reqData map[string]interface{}
-		if err := json.Unmarshal(body, &reqData); err == nil {
-			if stream, ok := reqData["stream"].(bool); ok && stream {
-				isStreaming = true
-			}
-		}
-	}
-	
+	// Use the client's streaming preference, not the upstream response type
+	// This ensures we respect what the client requested
 	h.logger.Info("response type determined",
-		"is_streaming", isStreaming,
+		"client_requested_streaming", isStreamingRequest,
+		"upstream_content_type", resp.Header.Get("Content-Type"),
 		"path", path,
 		"status", resp.StatusCode,
 	)
 	
-	// Handle response body
-	if isStreaming {
+	// Handle response body based on what the client requested
+	if isStreamingRequest {
 		// Copy response headers for streaming
 		for key, values := range resp.Header {
 			for _, value := range values {
@@ -223,58 +213,92 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.streamResponse(w, resp)
 		}
 	} else {
-		// For OpenAI endpoints, transform response back
-		if path == "/v1/chat/completions" {
-			respBody, err := io.ReadAll(resp.Body)
+		// Client wants non-streaming response
+		// Check if upstream returned SSE format
+		isUpstreamSSE := strings.Contains(resp.Header.Get("Content-Type"), "text/event-stream")
+		
+		if isUpstreamSSE {
+			// Upstream returned SSE but client wants JSON
+			// We need to buffer the SSE events and convert to JSON
+			h.logger.Info("converting SSE to JSON response", "path", path)
+			
+			jsonResp, err := h.convertSSEToJSON(resp)
 			if err != nil {
-				h.writeError(w, http.StatusInternalServerError, "Failed to read response", err.Error())
+				h.writeError(w, http.StatusInternalServerError, "Failed to convert SSE response", err.Error())
 				return
 			}
 			
-			// Transform Anthropic response to OpenAI format
-			transformedResp, err := h.config.Transformer.TransformResponseBody(respBody, path)
-			if err != nil {
-				// If transformation fails, return original
-				// Copy headers excluding Content-Length
+			// For OpenAI endpoints, transform the response
+			if path == "/v1/chat/completions" {
+				transformedResp, err := h.config.Transformer.TransformResponseBody(jsonResp, path)
+				if err != nil {
+					// If transformation fails, return original
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(resp.StatusCode)
+					w.Write(jsonResp)
+					return
+				}
+				jsonResp = transformedResp
+			}
+			
+			// Set JSON content type
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(resp.StatusCode)
+			w.Write(jsonResp)
+		} else {
+			// Regular JSON response handling
+			if path == "/v1/chat/completions" {
+				respBody, err := io.ReadAll(resp.Body)
+				if err != nil {
+					h.writeError(w, http.StatusInternalServerError, "Failed to read response", err.Error())
+					return
+				}
+				
+				// Transform Anthropic response to OpenAI format
+				transformedResp, err := h.config.Transformer.TransformResponseBody(respBody, path)
+				if err != nil {
+					// If transformation fails, return original
+					// Copy headers excluding Content-Length
+					for key, values := range resp.Header {
+						if strings.ToLower(key) != "content-length" {
+							for _, value := range values {
+								w.Header().Add(key, value)
+							}
+						}
+					}
+					w.WriteHeader(resp.StatusCode)
+					w.Write(respBody)
+					return
+				}
+				
+				// Copy headers excluding Content-Length and Content-Encoding
 				for key, values := range resp.Header {
-					if strings.ToLower(key) != "content-length" {
+					if strings.ToLower(key) != "content-length" && strings.ToLower(key) != "content-encoding" {
 						for _, value := range values {
 							w.Header().Add(key, value)
 						}
 					}
 				}
+				
+				// Write status code
 				w.WriteHeader(resp.StatusCode)
-				w.Write(respBody)
-				return
-			}
-			
-			// Copy headers excluding Content-Length and Content-Encoding
-			for key, values := range resp.Header {
-				if strings.ToLower(key) != "content-length" && strings.ToLower(key) != "content-encoding" {
+				
+				// Write transformed response (Go will set correct Content-Length)
+				w.Write(transformedResp)
+			} else {
+				// Regular response - copy headers and body
+				for key, values := range resp.Header {
 					for _, value := range values {
 						w.Header().Add(key, value)
 					}
 				}
+				
+				// Write status code
+				w.WriteHeader(resp.StatusCode)
+				
+				// Just copy
+				io.Copy(w, resp.Body)
 			}
-			
-			// Write status code
-			w.WriteHeader(resp.StatusCode)
-			
-			// Write transformed response (Go will set correct Content-Length)
-			w.Write(transformedResp)
-		} else {
-			// Regular response - copy headers and body
-			for key, values := range resp.Header {
-				for _, value := range values {
-					w.Header().Add(key, value)
-				}
-			}
-			
-			// Write status code
-			w.WriteHeader(resp.StatusCode)
-			
-			// Just copy
-			io.Copy(w, resp.Body)
 		}
 	}
 }
@@ -430,6 +454,105 @@ func (h *ProxyHandler) writeError(w http.ResponseWriter, statusCode int, errorTy
 	}
 	
 	json.NewEncoder(w).Encode(errorResp)
+}
+
+// convertSSEToJSON reads an SSE response and converts it to a JSON response
+func (h *ProxyHandler) convertSSEToJSON(resp *http.Response) ([]byte, error) {
+	// Buffer to accumulate the complete message
+	var message map[string]interface{}
+	var contentBlocks []map[string]interface{}
+	var currentText strings.Builder
+	
+	// Read the SSE stream
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		
+		// Skip empty lines
+		if line == "" {
+			continue
+		}
+		
+		// Parse SSE event
+		if strings.HasPrefix(line, "data: ") {
+			data := strings.TrimPrefix(line, "data: ")
+			
+			var event map[string]interface{}
+			if err := json.Unmarshal([]byte(data), &event); err != nil {
+				h.logger.Warn("failed to parse SSE event", "data", data, "error", err)
+				continue
+			}
+			
+			eventType, _ := event["type"].(string)
+			
+			switch eventType {
+			case "message_start":
+				// Extract the message structure
+				if msg, ok := event["message"].(map[string]interface{}); ok {
+					message = msg
+					// Initialize content array if not present
+					if message["content"] == nil {
+						message["content"] = []interface{}{}
+					}
+				}
+				
+			case "content_block_start":
+				// Initialize a new content block
+				if block, ok := event["content_block"].(map[string]interface{}); ok {
+					contentBlocks = append(contentBlocks, block)
+				}
+				
+			case "content_block_delta":
+				// Accumulate text from deltas
+				if delta, ok := event["delta"].(map[string]interface{}); ok {
+					if text, ok := delta["text"].(string); ok {
+						currentText.WriteString(text)
+					}
+				}
+				
+			case "content_block_stop":
+				// Finalize the current content block
+				if len(contentBlocks) > 0 && currentText.Len() > 0 {
+					// Update the last content block with accumulated text
+					lastBlock := contentBlocks[len(contentBlocks)-1]
+					lastBlock["text"] = currentText.String()
+					currentText.Reset()
+				}
+				
+			case "message_delta":
+				// Update message metadata (stop_reason, usage, etc.)
+				if delta, ok := event["delta"].(map[string]interface{}); ok {
+					for k, v := range delta {
+						message[k] = v
+					}
+				}
+				if usage, ok := event["usage"].(map[string]interface{}); ok {
+					message["usage"] = usage
+				}
+				
+			case "message_stop":
+				// Message is complete
+				break
+			}
+		}
+	}
+	
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading SSE stream: %w", err)
+	}
+	
+	// Ensure we have a valid message
+	if message == nil {
+		return nil, fmt.Errorf("no message found in SSE stream")
+	}
+	
+	// Set the content blocks
+	if len(contentBlocks) > 0 {
+		message["content"] = contentBlocks
+	}
+	
+	// Marshal the complete message to JSON
+	return json.Marshal(message)
 }
 
 // setCORSHeaders sets CORS headers for all responses
