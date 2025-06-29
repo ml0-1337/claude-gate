@@ -484,4 +484,105 @@ data: {"type":"message_stop"}
 			assert.Equal(t, "Hello from Claude", textBlock["text"])
 		}
 	})
+
+	t.Run("request with stream false should return JSON response", func(t *testing.T) {
+		// Test that explicitly setting stream: false returns non-streaming response
+		
+		// Create test server
+		upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Verify the request body
+			body, err := io.ReadAll(r.Body)
+			require.NoError(t, err)
+			
+			var reqData map[string]interface{}
+			err = json.Unmarshal(body, &reqData)
+			require.NoError(t, err)
+			
+			// Check that stream is explicitly false
+			stream, ok := reqData["stream"].(bool)
+			assert.True(t, ok, "stream parameter should be present")
+			assert.False(t, stream, "stream should be false")
+			
+			// Return SSE anyway (simulating Anthropic behavior)
+			w.Header().Set("Content-Type", "text/event-stream")
+			w.Header().Set("Cache-Control", "no-cache")
+			
+			flusher, ok := w.(http.Flusher)
+			require.True(t, ok)
+			
+			// Send minimal SSE events
+			events := []string{
+				`event: message_start
+data: {"type":"message_start","message":{"id":"msg_456","model":"claude-3-5-sonnet-20241022","role":"assistant","content":[]}}
+
+`,
+				`event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}
+
+`,
+				`event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Response with stream false"}}
+
+`,
+				`event: content_block_stop
+data: {"type":"content_block_stop","index":0}
+
+`,
+				`event: message_stop
+data: {"type":"message_stop"}
+
+`,
+			}
+			
+			for _, event := range events {
+				_, err := w.Write([]byte(event))
+				require.NoError(t, err)
+				flusher.Flush()
+			}
+		}))
+		defer upstream.Close()
+		
+		// Create proxy handler
+		handler := NewProxyHandler(&ProxyConfig{
+			UpstreamURL:   upstream.URL,
+			TokenProvider: &mockTokenProvider{token: "test-token"},
+			Transformer:   NewRequestTransformer(),
+		})
+		
+		// Create request with explicit stream: false
+		reqBody := map[string]interface{}{
+			"model":  "claude-3-5-sonnet-20241022",
+			"stream": false, // Explicitly set to false
+			"messages": []map[string]interface{}{
+				{"role": "user", "content": "Test"},
+			},
+		}
+		bodyBytes, _ := json.Marshal(reqBody)
+		
+		req := httptest.NewRequest("POST", "/v1/messages", bytes.NewReader(bodyBytes))
+		req.Header.Set("Content-Type", "application/json")
+		
+		// Execute request
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		
+		// Verify response is JSON, not SSE
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+		
+		// Verify JSON response structure
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		assert.Equal(t, "msg_456", response["id"])
+		
+		// Verify content was properly converted
+		content, ok := response["content"].([]interface{})
+		require.True(t, ok)
+		require.Len(t, content, 1)
+		
+		textBlock := content[0].(map[string]interface{})
+		assert.Equal(t, "text", textBlock["type"])
+		assert.Equal(t, "Response with stream false", textBlock["text"])
+	})
 }
