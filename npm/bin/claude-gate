@@ -1,0 +1,79 @@
+#!/usr/bin/env node
+
+/**
+ * Fallback wrapper for claude-gate
+ * This script runs if the postinstall script didn't execute
+ * It will attempt to find and run the correct platform binary
+ */
+
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+
+// Try to run the install script if binary is not found
+function ensureInstalled() {
+  const installScript = path.join(__dirname, '..', 'scripts', 'install.js');
+  const { install, getPlatform } = require(installScript);
+  
+  // Check if already installed
+  const platform = getPlatform();
+  const expectedBinary = path.join(__dirname, platform.isWindows ? 'claude-gate.exe' : 'claude-gate-bin');
+  
+  if (!fs.existsSync(expectedBinary)) {
+    console.log('Binary not found. Running installation...');
+    
+    // Run install synchronously
+    const { spawnSync } = require('child_process');
+    const result = spawnSync(process.execPath, [installScript], {
+      stdio: 'inherit',
+      cwd: path.join(__dirname, '..')
+    });
+    
+    if (result.status !== 0) {
+      console.error('\nFailed to install claude-gate automatically.');
+      console.error('Please try running: npm install -g claude-gate');
+      process.exit(1);
+    }
+  }
+  
+  return expectedBinary;
+}
+
+// Main execution
+try {
+  // Ensure binary is installed
+  const binaryPath = ensureInstalled();
+  
+  // Forward all arguments to the actual binary
+  const args = process.argv.slice(2);
+  
+  // Spawn the actual binary
+  const child = spawn(binaryPath, args, {
+    stdio: 'inherit',
+    windowsHide: true
+  });
+  
+  // Forward exit code
+  child.on('exit', (code) => {
+    process.exit(code || 0);
+  });
+  
+  // Handle errors
+  child.on('error', (err) => {
+    if (err.code === 'ENOENT') {
+      console.error('Error: claude-gate binary not found');
+      console.error('Please reinstall with: npm install -g claude-gate');
+    } else {
+      console.error('Error running claude-gate:', err.message);
+    }
+    process.exit(1);
+  });
+  
+  // Forward signals
+  process.on('SIGINT', () => child.kill('SIGINT'));
+  process.on('SIGTERM', () => child.kill('SIGTERM'));
+  
+} catch (error) {
+  console.error('Fatal error:', error.message);
+  process.exit(1);
+}
