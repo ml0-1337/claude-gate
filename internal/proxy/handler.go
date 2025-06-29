@@ -13,7 +13,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	
+
 	"github.com/ml0-1337/claude-gate/internal/auth"
 )
 
@@ -43,13 +43,13 @@ func NewProxyHandler(config *ProxyConfig) *ProxyHandler {
 	if config.Timeout == 0 {
 		config.Timeout = 600 * time.Second // 10 minutes default
 	}
-	
+
 	// Use default logger if none provided
 	logger := config.Logger
 	if logger == nil {
 		logger = slog.Default()
 	}
-	
+
 	// Create HTTP client with custom transport for better streaming support
 	transport := &http.Transport{
 		MaxIdleConns:        100,
@@ -57,7 +57,7 @@ func NewProxyHandler(config *ProxyConfig) *ProxyHandler {
 		IdleConnTimeout:     90 * time.Second,
 		DisableCompression:  true, // Important for SSE
 	}
-	
+
 	return &ProxyHandler{
 		config: config,
 		httpClient: &http.Client{
@@ -77,16 +77,16 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"remote_addr", r.RemoteAddr,
 		"user_agent", r.Header.Get("User-Agent"),
 	)
-	
+
 	// Handle CORS preflight requests
 	if r.Method == "OPTIONS" {
 		h.handleCORS(w, r)
 		return
 	}
-	
+
 	// Set CORS headers for all requests
 	h.setCORSHeaders(w, r)
-	
+
 	// Get OAuth token
 	token, err := h.config.TokenProvider.GetAccessToken()
 	if err != nil {
@@ -95,7 +95,7 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.logger.Debug("OAuth token retrieved successfully")
-	
+
 	// Read request body
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -103,7 +103,7 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
-	
+
 	// Check if this is a streaming request
 	isStreamingRequest := false
 	if len(body) > 0 {
@@ -115,7 +115,7 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	h.logger.Debug("streaming detection", "is_streaming", isStreamingRequest, "body_length", len(body))
-	
+
 	// Transform request body if needed
 	path := r.URL.Path
 	transformedBody, err := h.config.Transformer.TransformRequestBody(body, path)
@@ -123,13 +123,13 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, http.StatusInternalServerError, "Failed to transform request", err.Error())
 		return
 	}
-	
+
 	// Transform path for OpenAI endpoints
 	upstreamPath := path
 	if path == "/v1/chat/completions" {
 		upstreamPath = "/v1/messages"
 	}
-	
+
 	// Build upstream URL
 	upstreamURL, err := url.Parse(h.config.UpstreamURL)
 	if err != nil {
@@ -138,31 +138,31 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	upstreamURL.Path = upstreamPath
 	upstreamURL.RawQuery = r.URL.RawQuery
-	
+
 	// Create upstream request
 	upstreamReq, err := http.NewRequest(r.Method, upstreamURL.String(), bytes.NewReader(transformedBody))
 	if err != nil {
 		h.writeError(w, http.StatusInternalServerError, "Failed to create upstream request", err.Error())
 		return
 	}
-	
+
 	// For streaming requests, ensure proper connection handling
 	if isStreamingRequest {
 		// Set headers to prevent connection reuse for SSE
 		r.Header.Set("Connection", "close")
 		r.Header.Set("Cache-Control", "no-cache")
 	}
-	
+
 	// Inject OAuth headers
 	upstreamReq.Header = h.config.Transformer.InjectHeaders(r.Header, token)
-	
+
 	// Make upstream request
 	h.logger.Debug("sending request to upstream",
 		"url", upstreamReq.URL.String(),
 		"method", upstreamReq.Method,
 		"has_connection_header", upstreamReq.Header.Get("Connection") != "",
 	)
-	
+
 	resp, err := h.httpClient.Do(upstreamReq)
 	if err != nil {
 		h.logger.Error("upstream request failed", "error", err)
@@ -170,13 +170,13 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer resp.Body.Close()
-	
+
 	h.logger.Debug("received upstream response",
 		"status", resp.StatusCode,
 		"content_type", resp.Header.Get("Content-Type"),
 		"transfer_encoding", resp.Header.Get("Transfer-Encoding"),
 	)
-	
+
 	// Use the client's streaming preference, not the upstream response type
 	// This ensures we respect what the client requested
 	h.logger.Info("response type determined",
@@ -185,7 +185,7 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"path", path,
 		"status", resp.StatusCode,
 	)
-	
+
 	// Handle response body based on what the client requested
 	if isStreamingRequest {
 		// Copy response headers for streaming
@@ -194,15 +194,15 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				w.Header().Add(key, value)
 			}
 		}
-		
+
 		// Add headers to prevent proxy buffering and connection reuse
 		w.Header().Set("X-Accel-Buffering", "no") // Disable nginx buffering
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "close") // Close connection after SSE stream
-		
+
 		// Write status code
 		w.WriteHeader(resp.StatusCode)
-		
+
 		// For OpenAI endpoints, convert SSE format
 		if path == "/v1/chat/completions" {
 			h.logger.Info("streaming OpenAI-compatible response", "path", path)
@@ -216,18 +216,18 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// Client wants non-streaming response
 		// Check if upstream returned SSE format
 		isUpstreamSSE := strings.Contains(resp.Header.Get("Content-Type"), "text/event-stream")
-		
+
 		if isUpstreamSSE {
 			// Upstream returned SSE but client wants JSON
 			// We need to buffer the SSE events and convert to JSON
 			h.logger.Info("converting SSE to JSON response", "path", path)
-			
+
 			jsonResp, err := h.convertSSEToJSON(resp)
 			if err != nil {
 				h.writeError(w, http.StatusInternalServerError, "Failed to convert SSE response", err.Error())
 				return
 			}
-			
+
 			// For OpenAI endpoints, transform the response
 			if path == "/v1/chat/completions" {
 				transformedResp, err := h.config.Transformer.TransformResponseBody(jsonResp, path)
@@ -240,7 +240,7 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 				jsonResp = transformedResp
 			}
-			
+
 			// Set JSON content type
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(resp.StatusCode)
@@ -253,7 +253,7 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					h.writeError(w, http.StatusInternalServerError, "Failed to read response", err.Error())
 					return
 				}
-				
+
 				// Transform Anthropic response to OpenAI format
 				transformedResp, err := h.config.Transformer.TransformResponseBody(respBody, path)
 				if err != nil {
@@ -270,7 +270,7 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					w.Write(respBody)
 					return
 				}
-				
+
 				// Copy headers excluding Content-Length and Content-Encoding
 				for key, values := range resp.Header {
 					if strings.ToLower(key) != "content-length" && strings.ToLower(key) != "content-encoding" {
@@ -279,10 +279,10 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 				}
-				
+
 				// Write status code
 				w.WriteHeader(resp.StatusCode)
-				
+
 				// Write transformed response (Go will set correct Content-Length)
 				w.Write(transformedResp)
 			} else {
@@ -292,10 +292,10 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						w.Header().Add(key, value)
 					}
 				}
-				
+
 				// Write status code
 				w.WriteHeader(resp.StatusCode)
-				
+
 				// Just copy
 				io.Copy(w, resp.Body)
 			}
@@ -312,9 +312,9 @@ func (h *ProxyHandler) streamResponse(w http.ResponseWriter, resp *http.Response
 		io.Copy(w, resp.Body)
 		return
 	}
-	
+
 	h.logger.Debug("starting native SSE streaming")
-	
+
 	// Create a custom writer that flushes after each write
 	buf := make([]byte, 4096)
 	bytesStreamed := 0
@@ -349,33 +349,33 @@ func (h *ProxyHandler) streamOpenAIResponse(w http.ResponseWriter, resp *http.Re
 		h.streamResponse(w, resp)
 		return
 	}
-	
+
 	h.logger.Debug("starting OpenAI SSE conversion")
-	
+
 	// Generate message ID and timestamp for consistency
 	messageID := "chatcmpl-" + generateRandomID()
 	created := time.Now().Unix()
 	model := "claude-3-5-sonnet-20241022" // Default model
-	
+
 	h.logger.Debug("OpenAI SSE session",
 		"message_id", messageID,
 		"created", created,
 		"default_model", model,
 	)
-	
+
 	scanner := bufio.NewScanner(resp.Body)
 	var currentEvent string
 	eventCount := 0
-	
+
 	for scanner.Scan() {
 		line := scanner.Text()
-		
+
 		if strings.HasPrefix(line, "event: ") {
 			currentEvent = strings.TrimPrefix(line, "event: ")
 			h.logger.Debug("SSE event received", "event", currentEvent)
 		} else if strings.HasPrefix(line, "data: ") {
 			data := strings.TrimPrefix(line, "data: ")
-			
+
 			// Extract model from message_start if available
 			if currentEvent == "message_start" {
 				var msgData map[string]interface{}
@@ -388,7 +388,7 @@ func (h *ProxyHandler) streamOpenAIResponse(w http.ResponseWriter, resp *http.Re
 					}
 				}
 			}
-			
+
 			// Convert the SSE event
 			converted, err := ConvertAnthropicSSEToOpenAIWithLogger(currentEvent, data, messageID, model, created, h.logger)
 			if err == nil && converted != "" {
@@ -398,7 +398,7 @@ func (h *ProxyHandler) streamOpenAIResponse(w http.ResponseWriter, resp *http.Re
 					"event_count", eventCount,
 					"output_length", len(converted),
 				)
-				
+
 				n, writeErr := w.Write([]byte(converted))
 				if writeErr != nil {
 					h.logger.Error("failed to write converted event", "error", writeErr)
@@ -411,16 +411,16 @@ func (h *ProxyHandler) streamOpenAIResponse(w http.ResponseWriter, resp *http.Re
 			}
 		}
 	}
-	
+
 	// Check for scanner errors
 	if err := scanner.Err(); err != nil {
 		h.logger.Error("scanner error during SSE streaming", "error", err)
 		// The connection might have been closed by the client
 		return
 	}
-	
+
 	h.logger.Info("SSE streaming completed, sending [DONE] marker", "total_events", eventCount)
-	
+
 	// Send the [DONE] marker to properly close the OpenAI SSE stream
 	n, err := w.Write([]byte("data: [DONE]\n\n"))
 	if err != nil {
@@ -445,14 +445,14 @@ func generateRandomID() string {
 func (h *ProxyHandler) writeError(w http.ResponseWriter, statusCode int, errorType, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	
+
 	errorResp := map[string]interface{}{
 		"error": map[string]interface{}{
 			"type":    errorType,
 			"message": message,
 		},
 	}
-	
+
 	json.NewEncoder(w).Encode(errorResp)
 }
 
@@ -462,29 +462,29 @@ func (h *ProxyHandler) convertSSEToJSON(resp *http.Response) ([]byte, error) {
 	var message map[string]interface{}
 	var contentBlocks []map[string]interface{}
 	var currentText strings.Builder
-	
+
 	// Read the SSE stream
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		line := scanner.Text()
-		
+
 		// Skip empty lines
 		if line == "" {
 			continue
 		}
-		
+
 		// Parse SSE event
 		if strings.HasPrefix(line, "data: ") {
 			data := strings.TrimPrefix(line, "data: ")
-			
+
 			var event map[string]interface{}
 			if err := json.Unmarshal([]byte(data), &event); err != nil {
 				h.logger.Warn("failed to parse SSE event", "data", data, "error", err)
 				continue
 			}
-			
+
 			eventType, _ := event["type"].(string)
-			
+
 			switch eventType {
 			case "message_start":
 				// Extract the message structure
@@ -495,13 +495,13 @@ func (h *ProxyHandler) convertSSEToJSON(resp *http.Response) ([]byte, error) {
 						message["content"] = []interface{}{}
 					}
 				}
-				
+
 			case "content_block_start":
 				// Initialize a new content block
 				if block, ok := event["content_block"].(map[string]interface{}); ok {
 					contentBlocks = append(contentBlocks, block)
 				}
-				
+
 			case "content_block_delta":
 				// Accumulate text from deltas
 				if delta, ok := event["delta"].(map[string]interface{}); ok {
@@ -509,7 +509,7 @@ func (h *ProxyHandler) convertSSEToJSON(resp *http.Response) ([]byte, error) {
 						currentText.WriteString(text)
 					}
 				}
-				
+
 			case "content_block_stop":
 				// Finalize the current content block
 				if len(contentBlocks) > 0 && currentText.Len() > 0 {
@@ -518,7 +518,7 @@ func (h *ProxyHandler) convertSSEToJSON(resp *http.Response) ([]byte, error) {
 					lastBlock["text"] = currentText.String()
 					currentText.Reset()
 				}
-				
+
 			case "message_delta":
 				// Update message metadata (stop_reason, usage, etc.)
 				if delta, ok := event["delta"].(map[string]interface{}); ok {
@@ -529,28 +529,28 @@ func (h *ProxyHandler) convertSSEToJSON(resp *http.Response) ([]byte, error) {
 				if usage, ok := event["usage"].(map[string]interface{}); ok {
 					message["usage"] = usage
 				}
-				
+
 			case "message_stop":
 				// Message is complete
 				break
 			}
 		}
 	}
-	
+
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("error reading SSE stream: %w", err)
 	}
-	
+
 	// Ensure we have a valid message
 	if message == nil {
 		return nil, fmt.Errorf("no message found in SSE stream")
 	}
-	
+
 	// Set the content blocks
 	if len(contentBlocks) > 0 {
 		message["content"] = contentBlocks
 	}
-	
+
 	// Marshal the complete message to JSON
 	return json.Marshal(message)
 }
@@ -561,7 +561,7 @@ func (h *ProxyHandler) setCORSHeaders(w http.ResponseWriter, r *http.Request) {
 	if origin == "" {
 		origin = "*"
 	}
-	
+
 	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
@@ -586,7 +586,7 @@ func NewProxyServer(config *ProxyConfig, addr string, storage auth.StorageBacken
 	proxyHandler := NewProxyHandler(config)
 	healthHandler := NewHealthHandler(storage)
 	mux := CreateMux(proxyHandler, healthHandler)
-	
+
 	return &ProxyServer{
 		handler: proxyHandler,
 		server: &http.Server{
