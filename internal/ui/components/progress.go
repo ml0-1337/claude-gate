@@ -78,7 +78,13 @@ func (m ProgressModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the progress bar
 func (m ProgressModel) View() string {
-	pad := strings.Repeat(" ", m.width-len(m.title))
+	// Calculate padding, ensuring it's never negative
+	padWidth := m.width - len(m.title)
+	if padWidth < 0 {
+		padWidth = 0
+	}
+	pad := strings.Repeat(" ", padWidth)
+	
 	title := styles.SubtitleStyle.Render(m.title)
 	percent := styles.InfoStyle.Render(fmt.Sprintf("%.0f%%", m.percent*100))
 	
