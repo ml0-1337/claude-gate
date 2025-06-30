@@ -82,7 +82,9 @@ func (m *OAuthFlowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.authURL = msg.URL
 		m.currentStep = StepOpenBrowser
 		// Try to open browser
-		go TryOpenBrowser(msg.URL)
+		go func() {
+			_ = OpenBrowser(msg.URL)
+		}()
 		// Auto-advance after showing URL
 		return m, tea.Tick(2*time.Second, func(time.Time) tea.Msg {
 			return AdvanceStepMsg{}
