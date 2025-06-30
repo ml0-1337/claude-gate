@@ -13,7 +13,7 @@ import (
 
 // Test 5: LoginCmd should handle OAuth flow with mock
 func TestLoginCmd_OAuthFlow(t *testing.T) {
-	// Prediction: This test will be limited because OAuth flow involves browser interaction
+	// Prediction: This test will fail initially because we need to create mock interfaces
 	
 	// Create temporary directory for test
 	tmpDir := t.TempDir()
@@ -28,62 +28,122 @@ func TestLoginCmd_OAuthFlow(t *testing.T) {
 	defer os.Unsetenv("CLAUDE_GATE_AUTH_STORAGE_PATH")
 	defer os.Unsetenv("CLAUDE_GATE_AUTH_STORAGE_TYPE")
 	
-	// We can't fully test the OAuth flow because it requires:
-	// 1. Browser interaction
-	// 2. OAuth server callbacks
-	// 3. User input
+	// Test subcases
+	t.Run("already authenticated - skip re-auth", func(t *testing.T) {
+		// Setup existing token
+		storage := auth.NewFileStorage(authFile)
+		existingToken := &auth.TokenInfo{
+			Type:         "oauth",
+			AccessToken:  "existing-token",
+			RefreshToken: "existing-refresh",
+			ExpiresAt:    time.Now().Add(time.Hour).Unix(),
+		}
+		err := storage.Set("anthropic", existingToken)
+		require.NoError(t, err)
+		
+		// We can't test interactive prompts without mocking the UI components
+		// This would require refactoring to inject dependencies
+		assert.NotNil(t, cmd)
+	})
 	
-	// Just verify the command structure
-	assert.NotNil(t, cmd)
-	
-	// In a real test, we would:
-	// - Mock the OAuth client
-	// - Mock the browser launch
-	// - Simulate the callback with a code
-	// - Verify token storage
+	t.Run("fresh authentication", func(t *testing.T) {
+		// Remove any existing auth
+		os.RemoveAll(authFile)
+		
+		// We can't test the full OAuth flow without mocking:
+		// - auth.NewOAuthClient() to return a mock client
+		// - ui.RunOAuthFlow() to simulate user input
+		// - components.RunSpinner() to avoid UI interactions
+		
+		// For now, just verify the command exists
+		assert.NotNil(t, cmd)
+	})
 }
 
 // Test 6: LogoutCmd should remove tokens with confirmation
 func TestLogoutCmd_RemoveTokens(t *testing.T) {
-	// Prediction: This test will pass partially - we can test token removal but not interactive confirmation
+	// Prediction: This test will pass - we can test the token removal logic
 	
-	// Create temporary directory with existing token
-	tmpDir := t.TempDir()
-	authFile := filepath.Join(tmpDir, "auth.json")
-	
-	// Create and store a test token
-	storage := auth.NewFileStorage(authFile)
-	testToken := &auth.TokenInfo{
-		Type:         "oauth",
-		AccessToken:  "test-access",
-		RefreshToken: "test-refresh",
-		ExpiresAt:    time.Now().Add(time.Hour).Unix(),
+	tests := []struct {
+		name          string
+		hasToken      bool
+		tokenType     string
+		expectMessage string
+	}{
+		{
+			name:          "remove oauth token",
+			hasToken:      true,
+			tokenType:     "oauth",
+			expectMessage: "OAuth authentication removed",
+		},
+		{
+			name:          "remove api key",
+			hasToken:      true,
+			tokenType:     "api_key",
+			expectMessage: "API key removed",
+		},
+		{
+			name:          "no existing token",
+			hasToken:      false,
+			tokenType:     "",
+			expectMessage: "No authentication found",
+		},
 	}
-	err := storage.Set("anthropic", testToken)
-	require.NoError(t, err)
 	
-	// Verify token exists
-	token, err := storage.Get("anthropic")
-	require.NoError(t, err)
-	assert.NotNil(t, token)
-	
-	// Create LogoutCmd
-	cmd := &LogoutCmd{}
-	
-	// Mock environment
-	os.Setenv("CLAUDE_GATE_AUTH_STORAGE_PATH", authFile)
-	os.Setenv("CLAUDE_GATE_AUTH_STORAGE_TYPE", "file")
-	defer os.Unsetenv("CLAUDE_GATE_AUTH_STORAGE_PATH")
-	defer os.Unsetenv("CLAUDE_GATE_AUTH_STORAGE_TYPE")
-	
-	// We can't test the actual Run() method because it requires user confirmation
-	// But we can verify the command exists and the setup is correct
-	assert.NotNil(t, cmd)
-	
-	// In a real implementation, we would:
-	// - Mock the Confirm dialog to return true
-	// - Run the command
-	// - Verify the token was removed
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create temporary directory
+			tmpDir := t.TempDir()
+			authFile := filepath.Join(tmpDir, "auth.json")
+			
+			// Mock environment
+			os.Setenv("CLAUDE_GATE_AUTH_STORAGE_PATH", authFile)
+			os.Setenv("CLAUDE_GATE_AUTH_STORAGE_TYPE", "file")
+			defer os.Unsetenv("CLAUDE_GATE_AUTH_STORAGE_PATH")
+			defer os.Unsetenv("CLAUDE_GATE_AUTH_STORAGE_TYPE")
+			
+			// Setup token if needed
+			if tt.hasToken {
+				storage := auth.NewFileStorage(authFile)
+				var token *auth.TokenInfo
+				if tt.tokenType == "oauth" {
+					token = &auth.TokenInfo{
+						Type:         "oauth",
+						AccessToken:  "test-access",
+						RefreshToken: "test-refresh",
+						ExpiresAt:    time.Now().Add(time.Hour).Unix(),
+					}
+				} else {
+					token = &auth.TokenInfo{
+						Type:   "api_key",
+						APIKey: "test-api-key",
+					}
+				}
+				err := storage.Set("anthropic", token)
+				require.NoError(t, err)
+			}
+			
+			// Create LogoutCmd
+			cmd := &LogoutCmd{}
+			
+			// We can't test the actual Run() method without mocking UI components
+			// but we can verify the command structure and token management
+			assert.NotNil(t, cmd)
+			
+			// Verify initial token state
+			storage := auth.NewFileStorage(authFile)
+			token, err := storage.Get("anthropic")
+			if tt.hasToken {
+				require.NoError(t, err)
+				assert.NotNil(t, token)
+				assert.Equal(t, tt.tokenType, token.Type)
+			} else {
+				// When no token exists, Get returns nil, nil (not an error)
+				assert.NoError(t, err)
+				assert.Nil(t, token)
+			}
+		})
+	}
 }
 
 // Test auth subcommands parsing

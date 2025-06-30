@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "todo": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp",
+      "headers": {
+        "X-Working-Directory": "/Users/macbook/Programming/go_projects/claude-gate"
+      }
+    }
+  }
+}
