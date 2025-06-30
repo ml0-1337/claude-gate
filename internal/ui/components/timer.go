@@ -97,8 +97,19 @@ func (m TimerModel) View() string {
 	
 	// Create a progress bar based on remaining time
 	progress := float64(m.remaining) / float64(m.duration)
+	if progress < 0 {
+		progress = 0
+	} else if progress > 1 {
+		progress = 1
+	}
+	
 	width := 30
 	filled := int(float64(width) * (1 - progress))
+	if filled < 0 {
+		filled = 0
+	} else if filled > width {
+		filled = width
+	}
 	
 	progressBar := lipgloss.NewStyle().
 		Foreground(styles.Primary).
