@@ -72,9 +72,9 @@ func TestStorageStatusCmd_ShowDetails(t *testing.T) {
 	
 	// Check output
 	output := stdout + stderr
-	assert.Contains(t, output, "Storage Status")
+	assert.Contains(t, output, "Storage Backend Status")
 	assert.Contains(t, output, "Type: file")
-	assert.Contains(t, output, "Available: Yes")
+	assert.Contains(t, output, "Available: true")
 	assert.Contains(t, output, "anthropic")
 	assert.Contains(t, output, "openai")
 }
@@ -106,12 +106,12 @@ func TestStorageTestCmd_Operations(t *testing.T) {
 	
 	// Check output shows test results
 	output := stdout + stderr
-	assert.Contains(t, output, "Testing Storage Backend")
-	assert.Contains(t, output, "Type: file")
-	assert.Contains(t, output, "Write test")
-	assert.Contains(t, output, "Read test")
-	assert.Contains(t, output, "List test")
-	assert.Contains(t, output, "Delete test")
+	assert.Contains(t, output, "Testing storage backend")
+	assert.Contains(t, output, "Testing availability")
+	assert.Contains(t, output, "Testing write operation")
+	assert.Contains(t, output, "Testing read operation")
+	assert.Contains(t, output, "Testing list operation")
+	assert.Contains(t, output, "Testing remove operation")
 	assert.Contains(t, output, "All tests passed")
 }
 
