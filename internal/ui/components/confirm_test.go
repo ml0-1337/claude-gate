@@ -119,3 +119,132 @@ func TestConfirm_HelperFunction(t *testing.T) {
 	var fn func(string) bool = Confirm
 	assert.NotNil(t, fn)
 }
+
+// Test 21: ConfirmDefaultModel should handle default values
+func TestConfirmDefaultModel_DefaultValues(t *testing.T) {
+	// Prediction: This test will pass - testing default value handling
+	
+	t.Run("default yes", func(t *testing.T) {
+		model := &ConfirmDefaultModel{
+			ConfirmModel: ConfirmModel{
+				question: "Continue? (Y/n)",
+				answer:   true,
+				answered: false,
+			},
+			defaultYes: true,
+		}
+		
+		// Test pressing Enter uses default
+		updatedModel, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		confirm := updatedModel.(*ConfirmDefaultModel)
+		
+		assert.True(t, confirm.answer)
+		assert.True(t, confirm.answered)
+		assert.NotNil(t, cmd) // Should quit
+	})
+	
+	t.Run("default no", func(t *testing.T) {
+		model := &ConfirmDefaultModel{
+			ConfirmModel: ConfirmModel{
+				question: "Continue? (y/N)",
+				answer:   false,
+				answered: false,
+			},
+			defaultYes: false,
+		}
+		
+		// Test pressing Enter uses default
+		updatedModel, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		confirm := updatedModel.(*ConfirmDefaultModel)
+		
+		assert.False(t, confirm.answer)
+		assert.True(t, confirm.answered)
+		assert.NotNil(t, cmd) // Should quit
+	})
+	
+	t.Run("explicit yes overrides default", func(t *testing.T) {
+		model := &ConfirmDefaultModel{
+			ConfirmModel: ConfirmModel{
+				question: "Continue? (y/N)",
+				answer:   false,
+				answered: false,
+			},
+			defaultYes: false,
+		}
+		
+		// Test pressing Y overrides default
+		updatedModel, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Y")})
+		confirm := updatedModel.(*ConfirmDefaultModel)
+		
+		assert.True(t, confirm.answer)
+		assert.True(t, confirm.answered)
+		assert.NotNil(t, cmd)
+	})
+	
+	t.Run("explicit no overrides default", func(t *testing.T) {
+		model := &ConfirmDefaultModel{
+			ConfirmModel: ConfirmModel{
+				question: "Continue? (Y/n)",
+				answer:   true,
+				answered: false,
+			},
+			defaultYes: true,
+		}
+		
+		// Test pressing N overrides default
+		updatedModel, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("N")})
+		confirm := updatedModel.(*ConfirmDefaultModel)
+		
+		assert.False(t, confirm.answer)
+		assert.True(t, confirm.answered)
+		assert.NotNil(t, cmd)
+	})
+	
+	t.Run("escape cancels", func(t *testing.T) {
+		model := &ConfirmDefaultModel{
+			ConfirmModel: ConfirmModel{
+				question: "Continue? (Y/n)",
+				answer:   true,
+				answered: false,
+			},
+			defaultYes: true,
+		}
+		
+		// Test escape key cancels
+		updatedModel, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEsc})
+		confirm := updatedModel.(*ConfirmDefaultModel)
+		
+		assert.False(t, confirm.answer) // Always false on cancel
+		assert.True(t, confirm.answered)
+		assert.NotNil(t, cmd)
+	})
+	
+	t.Run("other keys ignored", func(t *testing.T) {
+		model := &ConfirmDefaultModel{
+			ConfirmModel: ConfirmModel{
+				question: "Continue? (Y/n)",
+				answer:   true,
+				answered: false,
+			},
+			defaultYes: true,
+		}
+		
+		// Test other keys are ignored
+		updatedModel, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("x")})
+		confirm := updatedModel.(*ConfirmDefaultModel)
+		
+		assert.True(t, confirm.answer) // Unchanged
+		assert.False(t, confirm.answered) // Not answered
+		assert.Nil(t, cmd)
+	})
+}
+
+// Test ConfirmWithDefault helper function
+func TestConfirmWithDefault_HelperFunction(t *testing.T) {
+	// Prediction: This test will pass - just verifying the function exists
+	// We can't fully test ConfirmWithDefault() without TTY
+	
+	// Verify the function signature
+	var fn func(string, bool) bool = ConfirmWithDefault
+	assert.NotNil(t, fn)
+}

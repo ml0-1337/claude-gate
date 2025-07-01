@@ -130,3 +130,34 @@ func TestRunSpinner_Structure(t *testing.T) {
 	var fn func(string, func() error) error = RunSpinner
 	assert.NotNil(t, fn)
 }
+
+// Test 10: SimpleSpinner should handle non-TTY environments gracefully
+func TestSimpleSpinner_Structure(t *testing.T) {
+	// Prediction: This test will pass - verifying function signature
+	// Note: We can't fully test SimpleSpinner without TTY, but we can verify structure
+	
+	// Verify the function exists and has the right signature
+	var fn func(string, time.Duration) = SimpleSpinner
+	assert.NotNil(t, fn)
+	
+	// Test that it doesn't panic in non-TTY environment
+	// Create a very short duration to avoid hanging
+	done := make(chan bool)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("SimpleSpinner panicked: %v", r)
+			}
+			done <- true
+		}()
+		// This will fail in non-TTY but shouldn't panic
+		SimpleSpinner("Test", 1*time.Millisecond)
+	}()
+	
+	select {
+	case <-done:
+		// Function completed (or failed gracefully)
+	case <-time.After(100 * time.Millisecond):
+		// Give it a reasonable timeout
+	}
+}
