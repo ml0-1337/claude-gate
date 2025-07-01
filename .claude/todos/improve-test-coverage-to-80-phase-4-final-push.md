@@ -83,15 +83,15 @@ type: feature
 - [x] Test 8: List returns all providers from encrypted files
 - [x] Test 9: Clear removes all token files
 - [x] Test 10: IsAvailable always returns true
-- [ ] Test 11: NewRequestLog creates log with correct capacity
-- [ ] Test 12: Add request appends to log correctly
-- [ ] Test 13: Add respects max capacity (circular buffer)
-- [ ] Test 14: GetEntries returns all entries
-- [ ] Test 15: GetFilteredEntries filters by status code
-- [ ] Test 16: GetFilteredEntries filters by path
-- [ ] Test 17: SetFilter updates filter correctly
-- [ ] Test 18: Clear removes all entries
-- [ ] Test 19: Concurrent access is thread-safe
+- [x] Test 11: NewRequestLog creates log with correct capacity
+- [x] Test 12: Add request appends to log correctly
+- [x] Test 13: Add respects max capacity (circular buffer)
+- [x] Test 14: GetEntries returns all entries
+- [x] Test 15: GetFilteredEntries filters by status code
+- [x] Test 16: GetFilteredEntries filters by path
+- [x] Test 17: SetFilter updates filter correctly
+- [x] Test 18: Clear removes all entries
+- [x] Test 19: Concurrent access is thread-safe
 - [ ] Test 20: SupportsEmoji detects iTerm correctly
 - [ ] Test 21: SupportsEmoji detects VS Code terminal
 - [ ] Test 22: SupportsEmoji detects Windows Terminal
@@ -133,6 +133,33 @@ type: feature
 [2025-07-02 01:53:37] ```
 
 [2025-07-02 01:53:37] **Mission Accomplished for Auth Package!** We've exceeded our 80% target for this package.
+
+[2025-07-02 01:57:16] ### Request Log Tests (Tests 11-19) ✅
+[2025-07-02 01:57:16] All request log tests passed successfully!
+[2025-07-02 01:57:16] - Created comprehensive test suite for request_log.go
+[2025-07-02 01:57:16] - Dashboard package coverage improved: 72.5% → 83.9% ✅
+[2025-07-02 01:57:16] - Tested circular buffer, filtering, concurrent access
+[2025-07-02 01:57:16] - Fixed path truncation test assertion
+
+[2025-07-02 01:57:16] ```bash
+[2025-07-02 01:57:16] # Test run output
+[2025-07-02 01:57:16] --- PASS: TestNewRequestLog_Initialization (0.00s)
+[2025-07-02 01:57:16] --- PASS: TestRequestLog_Add (0.00s)
+[2025-07-02 01:57:16] --- PASS: TestRequestLog_CircularBuffer (0.00s)
+[2025-07-02 01:57:16] --- PASS: TestRequestLog_GetRequests (0.00s)
+[2025-07-02 01:57:16] --- PASS: TestRequestLog_FilterByStatusCode (0.00s)
+[2025-07-02 01:57:16] --- PASS: TestRequestLog_FilterByPath (0.00s)
+[2025-07-02 01:57:16] --- PASS: TestRequestLog_SetFilter (0.00s)
+[2025-07-02 01:57:16] --- PASS: TestRequestLog_Clear (0.00s)
+[2025-07-02 01:57:16] --- PASS: TestRequestLog_ConcurrentAccess (0.06s)
+[2025-07-02 01:57:16] --- PASS: TestFormatRequest (0.00s)
+[2025-07-02 01:57:16] --- PASS: TestFormatBytes (0.00s)
+[2025-07-02 01:57:16] --- PASS: TestRequestLog_EdgeCases (0.00s)
+[2025-07-02 01:57:16] --- PASS: TestRequestEvent_AllFields (0.00s)
+[2025-07-02 01:57:16] coverage: 83.9% of statements
+[2025-07-02 01:57:16] ```
+
+[2025-07-02 01:57:16] **Current Overall Coverage: 79.6%** - Almost at our 80% target!
 ## Checklist
 
 ## Working Scratchpad
