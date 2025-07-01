@@ -107,6 +107,27 @@ func TestGetTerminalWidth(t *testing.T) {
 	assert.Equal(t, 80, width) // Default width
 }
 
+// Test 24: SupportsColor should check terminal color support
+func TestSupportsColor(t *testing.T) {
+	// Prediction: This test will pass - testing color support detection
+	
+	// In non-interactive environment (test), should return false
+	result := SupportsColor()
+	assert.False(t, result)
+	
+	// The actual color detection logic requires interactive terminal
+	// We're verifying the function exists and doesn't panic
+}
+
+// Test IsInteractive function
+func TestIsInteractive(t *testing.T) {
+	// Prediction: This test will pass - testing interactive detection
+	
+	// In test environment, should return false
+	result := IsInteractive()
+	assert.False(t, result)
+}
+
 // Test 13: ClearLine should return correct ANSI escape sequence
 func TestClearLine(t *testing.T) {
 	// Prediction: This test will pass - testing ANSI output
