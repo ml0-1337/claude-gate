@@ -1,6 +1,6 @@
 ---
 completed: ""
-current_test: 'Test 4: Timestamp conversion from milliseconds to seconds'
+current_test: 'Test 8: IsAvailable when keychain accessible'
 priority: high
 started: "2025-07-02 17:38:38"
 status: in_progress
@@ -112,6 +112,35 @@ type: feature
 [2025-07-02 17:42:24] --- PASS: TestClaudeCodeStorage_Get_InvalidJSON (0.00s)
 [2025-07-02 17:42:24] PASS
 [2025-07-02 17:42:24] ok  	github.com/ml0-1337/claude-gate/internal/auth	0.370s
+[2025-07-02 17:43:26] # Test 4
+[2025-07-02 06:47:36] Green Phase (already passing):
+[2025-07-02 17:43:26] === RUN   TestClaudeCodeStorage_Get_TimestampConversion
+[2025-07-02 17:43:26] === RUN   TestClaudeCodeStorage_Get_TimestampConversion/Standard_timestamp
+[2025-07-02 17:43:26] === RUN   TestClaudeCodeStorage_Get_TimestampConversion/Zero_timestamp
+[2025-07-02 17:43:26] === RUN   TestClaudeCodeStorage_Get_TimestampConversion/Edge_case_-_rounds_down
+[2025-07-02 17:43:26] --- PASS: TestClaudeCodeStorage_Get_TimestampConversion (0.00s)
+[2025-07-02 17:43:26]     --- PASS: TestClaudeCodeStorage_Get_TimestampConversion/Standard_timestamp (0.00s)
+[2025-07-02 17:43:26]     --- PASS: TestClaudeCodeStorage_Get_TimestampConversion/Zero_timestamp (0.00s)
+[2025-07-02 17:43:26]     --- PASS: TestClaudeCodeStorage_Get_TimestampConversion/Edge_case_-_rounds_down (0.00s)
+[2025-07-02 17:43:26] PASS
+[2025-07-02 17:43:26] ok  	github.com/ml0-1337/claude-gate/internal/auth	0.269s
+[2025-07-02 17:44:38] # Test 5
+[2025-07-02 06:48:45] Green Phase (already passing):
+[2025-07-02 17:44:38] === RUN   TestClaudeCodeStorage_Get_FieldMapping
+[2025-07-02 17:44:38] --- PASS: TestClaudeCodeStorage_Get_FieldMapping (0.00s)
+[2025-07-02 17:44:38] PASS
+[2025-07-02 17:44:38] ok  	github.com/ml0-1337/claude-gate/internal/auth	0.239s
+
+[2025-07-02 17:44:38] # Test 7 (Test 6 was already covered by Test 5)
+[2025-07-02 06:49:33] Green Phase (already passing):
+[2025-07-02 17:44:38] === RUN   TestClaudeCodeStorage_List
+[2025-07-02 17:44:38] === RUN   TestClaudeCodeStorage_List/With_credentials
+[2025-07-02 17:44:38] === RUN   TestClaudeCodeStorage_List/Without_credentials
+[2025-07-02 17:44:38] --- PASS: TestClaudeCodeStorage_List (0.00s)
+[2025-07-02 17:44:38]     --- PASS: TestClaudeCodeStorage_List/With_credentials (0.00s)
+[2025-07-02 17:44:38]     --- PASS: TestClaudeCodeStorage_List/Without_credentials (0.00s)
+[2025-07-02 17:44:38] PASS
+[2025-07-02 17:44:38] ok  	github.com/ml0-1337/claude-gate/internal/auth	0.228s
 ## Checklist
 
 ## Working Scratchpad
