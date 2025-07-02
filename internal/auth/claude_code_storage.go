@@ -3,6 +3,7 @@ package auth
 import (
 	"encoding/json"
 	"fmt"
+	"runtime"
 
 	"github.com/99designs/keyring"
 )
@@ -28,8 +29,14 @@ func NewClaudeCodeStorage() (*ClaudeCodeStorage, error) {
 	// Open keyring with Claude Code's service name
 	kr, err := keyring.Open(keyring.Config{
 		ServiceName: "Claude Code-credentials",
+		// Let it auto-detect the best backend
 	})
 	if err != nil {
+		// On macOS, if keyring fails, we can fall back to the direct implementation
+		if runtime.GOOS == "darwin" {
+			// Return a special error that the factory can handle
+			return nil, fmt.Errorf("keyring unavailable on macOS: %w", err)
+		}
 		return nil, fmt.Errorf("failed to open Claude Code keyring: %w", err)
 	}
 

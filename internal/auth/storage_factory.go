@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/99designs/keyring"
 )
@@ -107,6 +108,10 @@ func (f *StorageFactory) Create() (StorageBackend, error) {
 	case StorageTypeClaudeCode:
 		ccs, err := NewClaudeCodeStorage()
 		if err != nil {
+			// On macOS, if keyring fails, try the direct macOS implementation
+			if runtime.GOOS == "darwin" && strings.Contains(err.Error(), "keyring unavailable on macOS") {
+				return NewClaudeCodeStorageMacOS(), nil
+			}
 			return nil, fmt.Errorf("failed to create Claude Code storage adapter: %w", err)
 		}
 		return ccs, nil
