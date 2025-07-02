@@ -40,6 +40,16 @@ func NewClaudeCodeStorage() (*ClaudeCodeStorage, error) {
 		return nil, fmt.Errorf("failed to open Claude Code keyring: %w", err)
 	}
 
+	// On macOS, test if the keyring actually works
+	if runtime.GOOS == "darwin" {
+		// Try to list keys to see if it's actually functional
+		_, err := kr.Keys()
+		if err != nil {
+			// Keyring opened but doesn't work properly
+			return nil, fmt.Errorf("keyring unavailable on macOS: %w", err)
+		}
+	}
+
 	return &ClaudeCodeStorage{
 		keyring: kr,
 	}, nil
