@@ -1,9 +1,9 @@
 ---
-completed: ""
+completed: "2025-07-02 17:54:35"
 current_test: 'Test 8: IsAvailable when keychain accessible'
 priority: high
 started: "2025-07-02 17:38:38"
-status: in_progress
+status: completed
 todo_id: implement-claude-code-credential-adapter-for
 type: feature
 ---
@@ -142,5 +142,16 @@ type: feature
 [2025-07-02 17:44:38] PASS
 [2025-07-02 17:44:38] ok  	github.com/ml0-1337/claude-gate/internal/auth	0.228s
 ## Checklist
-
+- [x] Create ClaudeCodeStorage adapter implementing StorageBackend
+- [x] Read credentials from "Claude Code-credentials" keychain service
+- [x] Transform token format (nested to flat, milliseconds to seconds)
+- [x] Handle missing/invalid credentials gracefully
+- [x] Add StorageTypeClaudeCode constant
+- [x] Update StorageFactory to support new backend
+- [x] Add CLI --storage-backend flag
+- [x] Write comprehensive unit tests (12 test scenarios)
+- [x] Create integration tests
+- [x] Test with real Claude Code credentials
+- [x] Add documentation
+- [x] Update README
 ## Working Scratchpad
