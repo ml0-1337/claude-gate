@@ -53,13 +53,33 @@ func (s *ClaudeCodeStorage) Get(provider string) (*TokenInfo, error) {
 		return nil, nil
 	}
 
-	// Get item from keyring
-	item, err := s.keyring.Get("Claude Code-credentials")
+	// Claude Code stores credentials under the username, not a fixed key
+	// First try to list all keys to find the right one
+	keys, err := s.keyring.Keys()
 	if err != nil {
-		if err == keyring.ErrKeyNotFound {
-			return nil, nil
+		// If we can't list keys, assume no credentials
+		return nil, nil
+	}
+
+	// If no keys, no credentials
+	if len(keys) == 0 {
+		return nil, nil
+	}
+
+	// Try each key (should typically only be one - the username)
+	var item keyring.Item
+	var foundItem bool
+	for _, key := range keys {
+		item, err = s.keyring.Get(key)
+		if err == nil {
+			foundItem = true
+			break
 		}
-		return nil, err
+	}
+
+	if !foundItem {
+		// Couldn't get any items
+		return nil, nil
 	}
 
 	// Parse Claude Code format
@@ -91,15 +111,18 @@ func (s *ClaudeCodeStorage) Remove(provider string) error {
 
 // List returns available providers
 func (s *ClaudeCodeStorage) List() ([]string, error) {
-	// Check if Claude Code credentials exist
-	_, err := s.keyring.Get("Claude Code-credentials")
+	// Check if any Claude Code credentials exist
+	keys, err := s.keyring.Keys()
 	if err != nil {
-		if err == keyring.ErrKeyNotFound {
-			return []string{}, nil
-		}
 		return nil, err
 	}
-	return []string{"anthropic"}, nil
+	
+	// If there are any keys, we have credentials
+	if len(keys) > 0 {
+		return []string{"anthropic"}, nil
+	}
+	
+	return []string{}, nil
 }
 
 // IsAvailable checks if the backend is available

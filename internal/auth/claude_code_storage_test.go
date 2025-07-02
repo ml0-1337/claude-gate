@@ -10,11 +10,11 @@ import (
 
 // Test 1: Get returns transformed token when Claude Code credentials exist
 func TestClaudeCodeStorage_Get_ReturnsTransformedToken(t *testing.T) {
-	// Create mock keyring with Claude Code credentials
+	// Create mock keyring with Claude Code credentials (stored under username)
 	mockKeyring := &mockKeyringForClaudeCode{
 		items: map[string]keyring.Item{
-			"Claude Code-credentials": {
-				Key: "Claude Code-credentials",
+			"testuser": {
+				Key: "testuser",
 				Data: []byte(`{
 					"claudeAiOauth": {
 						"accessToken": "sk-ant-oat01-test-access",
@@ -110,8 +110,8 @@ func TestClaudeCodeStorage_Get_HandlesInvalidJSON(t *testing.T) {
 	// Create mock keyring with invalid JSON
 	mockKeyring := &mockKeyringForClaudeCode{
 		items: map[string]keyring.Item{
-			"Claude Code-credentials": {
-				Key:  "Claude Code-credentials",
+			"testuser": {
+				Key:  "testuser",
 				Data: []byte(`{invalid json`),
 			},
 		},
@@ -136,8 +136,8 @@ func TestClaudeCodeStorage_Get_ConvertsMillisecondsToSeconds(t *testing.T) {
 	// Create mock keyring with specific expiry time
 	mockKeyring := &mockKeyringForClaudeCode{
 		items: map[string]keyring.Item{
-			"Claude Code-credentials": {
-				Key: "Claude Code-credentials",
+			"testuser": {
+				Key: "testuser",
 				Data: []byte(`{
 					"claudeAiOauth": {
 						"accessToken": "token",
@@ -194,8 +194,8 @@ func TestClaudeCodeStorage_Remove_ReturnsError(t *testing.T) {
 func TestClaudeCodeStorage_List_ReturnsAnthropicWhenExists(t *testing.T) {
 	mockKeyring := &mockKeyringForClaudeCode{
 		items: map[string]keyring.Item{
-			"Claude Code-credentials": {
-				Key:  "Claude Code-credentials",
+			"testuser": {
+				Key:  "testuser",
 				Data: []byte(`{"claudeAiOauth": {}}`),
 			},
 		},
@@ -259,8 +259,8 @@ func TestClaudeCodeStorage_Name(t *testing.T) {
 func TestClaudeCodeStorage_Get_HandlesMissingNestedObject(t *testing.T) {
 	mockKeyring := &mockKeyringForClaudeCode{
 		items: map[string]keyring.Item{
-			"Claude Code-credentials": {
-				Key:  "Claude Code-credentials",
+			"testuser": {
+				Key:  "testuser",
 				Data: []byte(`{}`), // Missing claudeAiOauth
 			},
 		},
@@ -283,8 +283,8 @@ func TestClaudeCodeStorage_Get_HandlesMissingNestedObject(t *testing.T) {
 func TestClaudeCodeStorage_Get_PreservesAllFields(t *testing.T) {
 	mockKeyring := &mockKeyringForClaudeCode{
 		items: map[string]keyring.Item{
-			"Claude Code-credentials": {
-				Key: "Claude Code-credentials",
+			"testuser": {
+				Key: "testuser",
 				Data: []byte(`{
 					"claudeAiOauth": {
 						"accessToken": "sk-ant-oat01-full-test",
