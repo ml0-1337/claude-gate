@@ -126,28 +126,28 @@ type: feature
 [2025-07-02 09:24] Green Phase: Test 1 passing
 [2025-07-02 18:00:09] PASS: TestClaudeCodeStorage_Get_ReturnsTransformedToken
 ## Checklist
-- [ ] Test 1: Get returns transformed token when Claude Code credentials exist
-- [ ] Test 2: Get returns nil when Claude Code credentials don't exist
-- [ ] Test 3: Get handles invalid JSON in keychain gracefully
-- [ ] Test 4: Get converts milliseconds to seconds for expiry time
-- [ ] Test 5: Set returns error (read-only adapter)
-- [ ] Test 6: Remove returns error (read-only adapter)
-- [ ] Test 7: List returns ["anthropic"] when credentials exist
-- [ ] Test 8: List returns empty array when no credentials exist
-- [ ] Test 9: IsAvailable returns true when keychain is accessible
-- [ ] Test 10: IsAvailable returns false when keychain access fails
-- [ ] Test 11: Name returns descriptive identifier "claude-code-adapter"
-- [ ] Test 12: Get handles missing nested claudeAiOauth object
-- [ ] Test 13: Get preserves all token fields during transformation
-- [ ] Test 14: Get handles keychain read errors appropriately
-- [ ] Create claude_code_storage.go implementing StorageBackend interface
-- [ ] Add StorageTypeClaudeCode constant to storage_factory.go
-- [ ] Update factory Create() method to support new type
+- [x] Test 1: Get returns transformed token when Claude Code credentials exist
+- [x] Test 2: Get returns nil when Claude Code credentials don't exist
+- [x] Test 3: Get handles invalid JSON in keychain gracefully
+- [x] Test 4: Get converts milliseconds to seconds for expiry time
+- [x] Test 5: Set returns error (read-only adapter)
+- [x] Test 6: Remove returns error (read-only adapter)
+- [x] Test 7: List returns ["anthropic"] when credentials exist
+- [x] Test 8: List returns empty array when no credentials exist
+- [x] Test 9: IsAvailable returns true when keychain is accessible
+- [x] Test 10: IsAvailable returns false when keychain access fails
+- [x] Test 11: Name returns descriptive identifier "claude-code-adapter"
+- [x] Test 12: Get handles missing nested claudeAiOauth object
+- [x] Test 13: Get preserves all token fields during transformation
+- [x] Test 14: Get handles keychain read errors appropriately
+- [x] Create claude_code_storage.go implementing StorageBackend interface
+- [x] Add StorageTypeClaudeCode constant to storage_factory.go
+- [x] Update factory Create() method to support new type
 - [ ] Add configuration for Claude Code integration
-- [ ] Write comprehensive unit tests
+- [x] Write comprehensive unit tests
 - [ ] Add integration tests with mock keyring
-- [ ] Update CLI to expose --storage-backend=claude-code option
+- [x] Update CLI to expose --storage-backend=claude-code option
 - [ ] Document the integration in help text
-- [ ] Test edge cases and error handling
+- [x] Test edge cases and error handling
 - [ ] Add fallback mechanism when credentials missing
 ## Working Scratchpad

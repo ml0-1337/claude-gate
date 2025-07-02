@@ -90,6 +90,7 @@ claude-gate start [options]
 | `--dashboard` | - | `false` | Enable interactive dashboard |
 | `--daemon` | - | `false` | Run in background |
 | `--proxy-auth-token` | `CLAUDE_GATE_PROXY_AUTH_TOKEN` | - | Require authentication |
+| `--storage-backend` | `CLAUDE_GATE_AUTH_STORAGE_TYPE` | `auto` | Storage backend (auto, keyring, file, claude-code) |
 | `--tls-cert` | - | - | TLS certificate file |
 | `--tls-key` | - | - | TLS key file |
 
@@ -97,6 +98,12 @@ claude-gate start [options]
 ```bash
 # Start on default port
 claude-gate start
+
+# Use Claude Code credentials
+claude-gate start --storage-backend=claude-code
+
+# Start with custom port and auth token
+claude-gate start --port 8080 --proxy-auth-token=secret123
 
 # Start with dashboard
 claude-gate start --dashboard
