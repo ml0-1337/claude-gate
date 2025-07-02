@@ -1,6 +1,6 @@
 ---
 completed: ""
-current_test: 'Test 1: Valid credentials transformation'
+current_test: 'Test 4: Timestamp conversion from milliseconds to seconds'
 priority: high
 started: "2025-07-02 17:38:38"
 status: in_progress
@@ -100,6 +100,18 @@ type: feature
 [2025-07-02 17:40:58] --- PASS: TestClaudeCodeStorage_Get_ValidCredentials (0.00s)
 [2025-07-02 17:40:58] PASS
 [2025-07-02 17:40:58] ok  	github.com/ml0-1337/claude-gate/internal/auth	0.278s
+[2025-07-02 17:41:49] # Test 2
+[2025-07-02 06:45:32] Green Phase (already passing):
+[2025-07-02 17:41:49] === RUN   TestClaudeCodeStorage_Get_MissingCredentials
+[2025-07-02 17:41:49] --- PASS: TestClaudeCodeStorage_Get_MissingCredentials (0.00s)
+[2025-07-02 17:41:49] PASS
+[2025-07-02 17:41:49] ok  	github.com/ml0-1337/claude-gate/internal/auth	0.222s
+[2025-07-02 17:42:24] # Test 3  
+[2025-07-02 06:46:29] Green Phase (already passing):
+[2025-07-02 17:42:24] === RUN   TestClaudeCodeStorage_Get_InvalidJSON
+[2025-07-02 17:42:24] --- PASS: TestClaudeCodeStorage_Get_InvalidJSON (0.00s)
+[2025-07-02 17:42:24] PASS
+[2025-07-02 17:42:24] ok  	github.com/ml0-1337/claude-gate/internal/auth	0.370s
 ## Checklist
 
 ## Working Scratchpad
