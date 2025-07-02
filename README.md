@@ -15,6 +15,7 @@ Claude Gate is a Go rewrite of claude-auth-bridge that maintains the critical OA
 - ✅ **Cross-Platform** - Works on macOS and Linux
 - ✅ **Interactive Dashboard** - Real-time monitoring of requests and usage
 - ✅ **High Performance** - <50MB memory usage, <5ms request overhead
+- ✅ **Claude Code Integration** - Use existing Claude Code credentials seamlessly
 
 ## Quick Start
 
@@ -37,6 +38,11 @@ sudo mv claude-gate /usr/local/bin/
 
 ```bash
 claude-gate auth login
+```
+
+Or use existing Claude Code credentials:
+```bash
+claude-gate start --storage-backend=claude-code
 ```
 
 ### 3. Start Proxy
