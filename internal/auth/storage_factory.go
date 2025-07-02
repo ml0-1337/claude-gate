@@ -12,9 +12,10 @@ import (
 type StorageType string
 
 const (
-	StorageTypeAuto    StorageType = "auto"    // Automatically select best available
-	StorageTypeKeyring StorageType = "keyring" // Force keyring storage
-	StorageTypeFile    StorageType = "file"    // Force file storage
+	StorageTypeAuto       StorageType = "auto"        // Automatically select best available
+	StorageTypeKeyring    StorageType = "keyring"     // Force keyring storage
+	StorageTypeFile       StorageType = "file"        // Force file storage
+	StorageTypeClaudeCode StorageType = "claude-code" // Read from Claude Code's keychain
 )
 
 // StorageFactory creates storage backends based on configuration
@@ -102,6 +103,13 @@ func (f *StorageFactory) Create() (StorageBackend, error) {
 			return nil, fmt.Errorf("failed to create keyring storage: %w", err)
 		}
 		return ks, nil
+		
+	case StorageTypeClaudeCode:
+		ccs, err := NewClaudeCodeStorage()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Claude Code storage adapter: %w", err)
+		}
+		return ccs, nil
 		
 	case StorageTypeAuto:
 		// Try keyring first, fall back to file

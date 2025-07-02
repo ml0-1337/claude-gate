@@ -43,19 +43,21 @@ type CLI struct {
 }
 
 type StartCmd struct {
-	Host      string `help:"Host to bind the proxy server" default:"127.0.0.1"`
-	Port      int    `help:"Port to bind the proxy server" default:"5789"`
-	AuthToken string `help:"Enable proxy authentication with this token" env:"CLAUDE_GATE_PROXY_AUTH_TOKEN"`
-	LogLevel  string `help:"Logging level (DEBUG, INFO, WARNING, ERROR)" default:"INFO"`
-	SkipAuthCheck bool `help:"Skip OAuth authentication check"`
+	Host          string `help:"Host to bind the proxy server" default:"127.0.0.1"`
+	Port          int    `help:"Port to bind the proxy server" default:"5789"`
+	AuthToken     string `help:"Enable proxy authentication with this token" env:"CLAUDE_GATE_PROXY_AUTH_TOKEN"`
+	LogLevel      string `help:"Logging level (DEBUG, INFO, WARNING, ERROR)" default:"INFO"`
+	StorageBackend string `help:"Storage backend (auto, keyring, file, claude-code)" default:"auto" enum:"auto,keyring,file,claude-code"`
+	SkipAuthCheck bool   `help:"Skip OAuth authentication check"`
 }
 
 type DashboardCmd struct {
-	Host      string `help:"Host to bind the proxy server" default:"127.0.0.1"`
-	Port      int    `help:"Port to bind the proxy server" default:"5789"`
-	AuthToken string `help:"Enable proxy authentication with this token" env:"CLAUDE_GATE_PROXY_AUTH_TOKEN"`
-	LogLevel  string `help:"Logging level (DEBUG, INFO, WARNING, ERROR)" default:"INFO"`
-	SkipAuthCheck bool `help:"Skip OAuth authentication check"`
+	Host          string `help:"Host to bind the proxy server" default:"127.0.0.1"`
+	Port          int    `help:"Port to bind the proxy server" default:"5789"`
+	AuthToken     string `help:"Enable proxy authentication with this token" env:"CLAUDE_GATE_PROXY_AUTH_TOKEN"`
+	LogLevel      string `help:"Logging level (DEBUG, INFO, WARNING, ERROR)" default:"INFO"`
+	StorageBackend string `help:"Storage backend (auto, keyring, file, claude-code)" default:"auto" enum:"auto,keyring,file,claude-code"`
+	SkipAuthCheck bool   `help:"Skip OAuth authentication check"`
 }
 
 type AuthCmd struct {
@@ -81,6 +83,7 @@ func (s *StartCmd) Run() error {
 	cfg.Port = s.Port
 	cfg.ProxyAuthToken = s.AuthToken
 	cfg.LogLevel = s.LogLevel
+	cfg.AuthStorageType = s.StorageBackend
 	cfg.LoadFromEnv()
 	
 	out := ui.NewOutput()
@@ -178,6 +181,7 @@ func (d *DashboardCmd) Run() error {
 	cfg.Port = d.Port
 	cfg.ProxyAuthToken = d.AuthToken
 	cfg.LogLevel = d.LogLevel
+	cfg.AuthStorageType = d.StorageBackend
 	cfg.LoadFromEnv()
 	
 	out := ui.NewOutput()
