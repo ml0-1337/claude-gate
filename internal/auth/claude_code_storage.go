@@ -38,6 +38,14 @@ func NewClaudeCodeStorage() (*ClaudeCodeStorage, error) {
 	}, nil
 }
 
+// NewClaudeCodeStorageWithKeyring creates a new Claude Code storage adapter with a custom keyring
+// This is primarily for testing purposes
+func NewClaudeCodeStorageWithKeyring(kr keyring.Keyring) *ClaudeCodeStorage {
+	return &ClaudeCodeStorage{
+		keyring: kr,
+	}
+}
+
 // Get retrieves and transforms Claude Code credentials
 func (s *ClaudeCodeStorage) Get(provider string) (*TokenInfo, error) {
 	// Claude Code only supports anthropic

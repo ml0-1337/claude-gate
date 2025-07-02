@@ -43,6 +43,23 @@ func TestStorageFactory_Create(t *testing.T) {
 		assert.True(t, storage.Name() == "keyring:claude-gate" || strings.Contains(storage.Name(), "file:"))
 	})
 	
+	// Test Claude Code storage creation
+	t.Run("claude code storage", func(t *testing.T) {
+		factory := NewStorageFactory(StorageFactoryConfig{
+			Type: StorageTypeClaudeCode,
+		})
+		
+		storage, err := factory.Create()
+		assert.NoError(t, err)
+		assert.NotNil(t, storage)
+		
+		// Verify it's the right type
+		ccs, ok := storage.(*ClaudeCodeStorage)
+		assert.True(t, ok, "Expected ClaudeCodeStorage type")
+		assert.NotNil(t, ccs)
+		assert.Equal(t, "claude-code-adapter", storage.Name())
+	})
+	
 	// Test unknown storage type
 	t.Run("unknown storage type", func(t *testing.T) {
 		factory := &StorageFactory{
